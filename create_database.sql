@@ -6,7 +6,7 @@ CREATE TABLE `applications` (
   `ratelimit` int(50) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `secret` (`secret`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 CREATE TABLE `application_hits` (
   `hit` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -16,5 +16,5 @@ CREATE TABLE `application_hits` (
   PRIMARY KEY (`hit`),
   KEY `app` (`app`),
   KEY `stamp` (`stamp`)
-) ENGINE=InnoDB AUTO_INCREMENT=308 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
