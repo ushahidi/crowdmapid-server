@@ -18,17 +18,3 @@ CREATE TABLE `application_hits` (
   KEY `stamp` (`stamp`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
-ta will be exposed with API calls.',
-  `registered` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `secret` (`secret`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE `application_hits` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `application` int(11) DEFAULT NULL COMMENT 'The id of the originating application.',
-  `method` varchar(32) DEFAULT NULL COMMENT 'The API method invoked.',
-  `stamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Timestamp of when the API hit occured.',
-  PRIMARY KEY (`id`),
-  KEY `application` (`application`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
