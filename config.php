@@ -15,3 +15,4 @@ define( 'CFG_SQL_PASSWORD',  'root' );
 define( 'CFG_SQL_DATABASE',  'riverid' );
 
 define('CFG_RATELIMIT_SEC',  3600 );
+
