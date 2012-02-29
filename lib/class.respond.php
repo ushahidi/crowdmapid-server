@@ -87,7 +87,7 @@ $http_status_codes = array(
 class Response {
 
 	function Send($code, $success, $data) {
-		global $http_status_codes, $request;
+		global $Application, $http_status_codes, $request;
 
 		if(isset($http_status_codes[$code])) {
 			$status = $http_status_codes[$code];
@@ -105,20 +105,31 @@ class Response {
 			$resp['method'] = API_METHOD;
 		}
 
+		$callback = null;
 		if(isset($request)) {
 			$resp['request'] = $request;
 			if ( isset($resp['request']['api_secret']) )
 			{
 				unset($resp['request']['api_secret']);
 			}
+
+			if ( isset($resp['request']['callback']) )
+			{
+				$callback = $resp['request']['callback'];
+				unset($resp['request']['callback']);
+			}
 		}
+
+		$resp = array_merge($resp, $data);
 
 		if(defined('BENCHMARK')) {
 			$resp['benchmark'] = round((microtime() - BENCHMARK), 4);
 		}
 
-		$resp = array_merge($resp, $data);
 		$resp = json_encode($resp);
+		if($callback) {
+			$resp = "{$callback}({$resp})";
+		}
 
 		header('Content-Length: ' . strlen($resp));
 

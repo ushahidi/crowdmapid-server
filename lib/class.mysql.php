@@ -53,6 +53,7 @@ class MySQL
 		$result = @mysql_unbuffered_query($statement, $this->link);
 		if ( !$result )
 		{
+			echo $statement; exit;
 			global $Response;
 			$Response->Send(500, RESP_ERR, array(
 				   'error' => 'An invalid database query was passed. An administrator has been notified.'

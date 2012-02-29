@@ -25,11 +25,14 @@ require('./lib/class.respond.php');			// Response formatter.
 require('./lib/class.apps.php');			// API Access Control
 //require('./lib/class.sites.php');			// Sites
 //require('./lib/class.user.php');			// Users
-//require('./lib/class.security.php');		// Security
+require('./lib/class.security.php');		// Security
 //require('./lib/class.validation.php');		// Validation
 //require('./lib/startup.php');				// Make sure everything is in order.
 require('./lib/class.mysql.php');			// MySQL interaction.
 //require('./lib/class.plugins.php');			// Load any available plugins.
+
+//$Application->Create('Crowdmap', 'https://crowdmap.com', 10, 'evan@ushahidi.com', 'Evan Sims');
+//$Application->Set("b85f392505beed6e51e23dd1ce3006cdd25e36094393a9e4f776411196841724");
 
 if ( $_SERVER['REQUEST_METHOD'] == 'GET' )
 {
@@ -93,7 +96,7 @@ if ( defined('API_METHOD') )
 	{
 		// Get an application's current hit cap and remaining hits.
 		// This call does not count against an app's cap.
-		@$Application->Validate($request['api_secret'], true);
+		@$Application->Set($request['api_secret'], true);
 		$Response->Send(200, RESP_OK, array(
 			   'limit' => $Application->data['ratelimit'],
 		   'remaining' => ($Application->data['ratelimit'] - $Application->hits)
@@ -102,31 +105,44 @@ if ( defined('API_METHOD') )
 	else
 	{
 		// Ensure the requesting application is registered, isn't over their hit limit, etc. and register this api hit against their limit.
-		@$Application->Validate($request['api_secret']);
+		@$Application->Set($request['api_secret']);
 
-		if ( ( API_METHOD == 'addusertosite' || API_METHOD == 'add_user_to_site' ) )
-		{
-			api_expectations(array('email', 'session_id', 'url'));
+		if(isset($request['api_version'])) {
+			if($request['api_version'] == '1.1') {
+				require('./lib/api.1-1.php');
+			}
+		} else {
+			require('./lib/api.legacy.php');
 		}
-		elseif ( ( API_METHOD == 'changeemail' || API_METHOD == 'change_email' ) )
-		{
-			api_expectations(array('oldemail', 'newemail', 'password', 'mailbody', 'subject'));
+
+	}
+}
+
+$Response->Send(400, RESP_ERR, array(
+	'error' => 'No supported API methods were invoked.'
+));
+
+exit;
+
+function api_expectations($expected) {
+	global $request, $Response;
+
+	if ( ! array_keys_exist($request, $expected) )
+	{
+		$Response->Send(400, RESP_ERR, array(
+			'error' => 'JSON parameter missing. Expected: ' . implode(',', $expected)
+		));
+	}
+}
+
+function array_keys_exist($array, $search) {
+	foreach($search as $s) {
+		if(!isset($array[$s])) {
+			return false;
 		}
-		elseif ( ( API_METHOD == 'changepassword' || API_METHOD == 'change_password' ) )
-		{
-			api_expectations(array('email', 'oldpassword', 'newpassword'));
-		}
-		elseif ( ( API_METHOD == 'checkpassword' || API_METHOD == 'check_password' ) )
-		{
-			api_expectations(array('email', 'password'));
-		}
-		elseif ( ( API_METHOD == 'confirmemail' || API_METHOD == 'confirm_email' ) )
-		{
-			api_expectations(array('email', 'token'));
-		}
-		elseif ( API_METHOD == 'register' )
-		{
-			api_expectations(array('email', 'password'));
+	}
+}
+rd'));
 		}
 		elseif ( API_METHOD == 'registered' )
 		{
