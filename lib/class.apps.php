@@ -41,15 +41,14 @@ class Application {
 
 				// Delete expired hits.
 				// TODO: Move this to a cron task. We can't have this running every single API call in production.
-				$MySQL->Push('DELETE LOW_PRIORITY QUICK IGNORE FROM application_hits WHERE application="' . $MySQL->Clean($this->data['id']) . '" AND stamp < NOW() - ' . CFG_RATELIMIT_SEC);
+				$MySQL->Push('DELETE FROM application_hits WHERE application="' . $MySQL->Clean($this->data['id']) . '" AND stamp < NOW() - ' . CFG_RATELIMIT_SEC);
 
-				// Determine the number of hits in the last 24 hours.
-				$this->hits = $MySQL->Pull('SELECT COUNT(*) FROM application_hits WHERE application="' . $MySQL->Clean($this->data['id']) . '" AND stamp > NOW() - ' . CFG_RATELIMIT_SEC . ' LIMIT 1;');
-				$this->hits = (int)$this->hits['COUNT(*)'];
-				$this->hits++;
+				// Determine the number of unexpired hits.
+				$this->hits = $MySQL->Pull('SELECT cache_value FROM cache WHERE cache_name="app_hits_count" LIMIT 1;');
+				$this->hits = $this->hits['cache_value'];
 
 				// Has the application exceeded it's API query limit for the day?
-				if ( $this->hits > $this->data['ratelimit'] )
+				if ( $this->hits == $this->data['ratelimit'] )
 				{
 					$Response->Send(509, RESP_ERR, array(
 						'error' => 'Your application has made too many API calls recently. Please contact us to inquire about whitelisting.'
@@ -57,7 +56,7 @@ class Application {
 				}
 
 				// Record this request as a new hit.
-				$MySQL->Push('INSERT INTO application_hits (application,method) VALUES ("' . $MySQL->Clean($this->data['id']) . '", "' . API_METHOD . '");');
+				$MySQL->Push('INSERT INTO application_hits (application,method) VALUES ("' . $this->data['id'] . '", "' . API_METHOD . '");');
 				header('X-RateLimit-Remaining: ' . ($this->data['ratelimit'] - $this->hits));
 			}
 		} else {
@@ -103,6 +102,37 @@ class Application {
 		}
 		return $ret;
 	}
+
+	/*
+	private function __Property($var, $update = null, $filter = null)
+	{
+		if ( $update !== null )
+		{
+			global $MySQL;
+
+			if ( ! $filter )
+			{
+				$filter = FILTER_SANITIZE_STRING;
+			}
+
+			$update = $MySQL->Clean(trim(filter_var($update, $filter)));
+
+			if ( $update !== null )
+			{
+				$ret = $MySQL->Push('UPDATE applications SET ' . $var . '="' . $update . '" WHERE id=' . $this->data['id'] . ' LIMIT 1;');
+				if ( $ret )
+				{
+					$this->data[$var] = $update;
+					return $this->data[$var];
+				}
+			}
+		}
+		else
+		{
+			return $this->data[$var];
+		}
+	}
+	*/
 
 	// Get or assign the name of the application.
 	public function Name($update = null)

@@ -24,9 +24,8 @@ require('./config.php');					// Import configuration.
 require('./lib/class.respond.php');			// Response formatter.
 require('./lib/class.apps.php');			// API Access Control
 //require('./lib/class.sites.php');			// Sites
-//require('./lib/class.user.php');			// Users
+require('./lib/class.users.php');			// Users
 require('./lib/class.security.php');		// Security
-//require('./lib/class.validation.php');		// Validation
 //require('./lib/startup.php');				// Make sure everything is in order.
 require('./lib/class.mysql.php');			// MySQL interaction.
 //require('./lib/class.plugins.php');			// Load any available plugins.
@@ -86,7 +85,7 @@ if ( defined('API_METHOD') )
 	elseif ( API_METHOD == 'ping' )
 	{
 		$Response->Send(200, RESP_OK, array(
-			'response' => "OK"
+			'response' => 'OK'
 		));
 	}
 	elseif ( API_METHOD == 'ratelimit' )
@@ -109,7 +108,7 @@ if ( defined('API_METHOD') )
 				require('./lib/api.1-1.php');
 			}
 		} else {
-			require('./lib/api.legacy.php');
+			require('./lib/api.1-0.php');
 		}
 
 	}
@@ -128,18 +127,6 @@ function api_expectations($expected) {
 	{
 		$Response->Send(400, RESP_ERR, array(
 			'error' => 'JSON parameter missing. Expected: ' . implode(',', $expected)
-		));
-	}
-}
-
-function array_keys_exist($array, $search) {
-	foreach($search as $s) {
-		if(!isset($array[$s])) {
-			return false;
-		}
-	}
-}
-eter missing. Expected: ' . implode(',', $expected)
 		));
 	}
 }
