@@ -1,5 +1,7 @@
 <?php
 
+if(!defined('LOADED_SAFELY')) die('You cannot access this file directly.');
+
 if ( ( API_METHOD == 'addusertosite' || API_METHOD == 'add_user_to_site' ) )
 {
 	api_expectations(array('email', 'session_id', 'url'));

@@ -31,9 +31,6 @@ require('./lib/class.security.php');		// Security
 require('./lib/class.mysql.php');			// MySQL interaction.
 //require('./lib/class.plugins.php');			// Load any available plugins.
 
-//$Application->Create('Crowdmap', 'https://crowdmap.com', 10, 'evan@ushahidi.com', 'Evan Sims');
-//$Application->Set("b85f392505beed6e51e23dd1ce3006cdd25e36094393a9e4f776411196841724");
-
 if ( $_SERVER['REQUEST_METHOD'] == 'GET' )
 {
 	// GET calls retrieve entries in a read-only state. Calls will never modify data.
@@ -131,6 +128,18 @@ function api_expectations($expected) {
 	{
 		$Response->Send(400, RESP_ERR, array(
 			'error' => 'JSON parameter missing. Expected: ' . implode(',', $expected)
+		));
+	}
+}
+
+function array_keys_exist($array, $search) {
+	foreach($search as $s) {
+		if(!isset($array[$s])) {
+			return false;
+		}
+	}
+}
+eter missing. Expected: ' . implode(',', $expected)
 		));
 	}
 }

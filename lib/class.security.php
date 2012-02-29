@@ -1,14 +1,16 @@
 <?php
 
+if(!defined('LOADED_SAFELY')) die('You cannot access this file directly.');
+
 class Security
 {
 
-	function Hash($string, $length = 512)
+	public function Hash($string, $length = 512)
 	{
 		return substr(hash('sha512', (CFG_SALT . $string), false), 0, $length);
 	}
 
-	function Generate($length)
+	public function Generate($length)
 	{
 		$chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 		$charLen = strlen($chars);
@@ -23,7 +25,7 @@ class Security
 		return $built;
 	}
 
-	function randHash($length = 512)
+	public function randHash($length = 512)
 	{
 		return $this->Hash($this->Generate($length), $length);
 	}

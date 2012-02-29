@@ -1,5 +1,7 @@
 <?php
 
+if(!defined('LOADED_SAFELY')) die('You cannot access this file directly.');
+
 if ( API_METHOD == 'user/site' )
 {
 	if ( HTTP_METHOD == 'GET' )

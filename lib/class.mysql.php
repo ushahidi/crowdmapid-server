@@ -1,11 +1,13 @@
 <?php
 
+if(!defined('LOADED_SAFELY')) die('You cannot access this file directly.');
+
 class MySQL
 {
 
-	var $link = null;
+	private $link;
 
-	function MySQL()
+	public function __construct()
 	{
 		$this->link = @mysql_connect(CFG_SQL_HOST, CFG_SQL_USER, CFG_SQL_PASSWORD);
 		if ( $this->link )
@@ -22,7 +24,7 @@ class MySQL
 		}
 	}
 
-	function Pull($statement)
+	public function Pull($statement)
 	{
 		$result = @mysql_query($statement, $this->link);
 		if ( !$result )
@@ -48,7 +50,7 @@ class MySQL
 		return $return_results;
 	}
 
-	function Push($statement)
+	public function Push($statement)
 	{
 		$result = @mysql_unbuffered_query($statement, $this->link);
 		if ( !$result )
@@ -68,7 +70,7 @@ class MySQL
 		return true;
 	}
 
-	function Clean($string)
+	public function Clean($string)
 	{
 		// Prepare a string for use in a statement.
 		if ( function_exists('mysql_real_escape_string') )
