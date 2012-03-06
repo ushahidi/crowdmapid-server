@@ -1,9 +1,5 @@
 <?php
 
-/*
-	RIVERID-PHP
-*/
-
 // Start benchmark timer.
 define('BENCHMARK', microtime());
 
@@ -28,11 +24,10 @@ require('./lib/class.users.php');			// Users
 require('./lib/class.security.php');		// Security
 //require('./lib/startup.php');				// Make sure everything is in order.
 require('./lib/class.mysql.php');			// MySQL interaction.
-//require('./lib/class.plugins.php');			// Load any available plugins.
+//require('./lib/class.plugins.php');		// Load any available plugins.
 
 if ( $_SERVER['REQUEST_METHOD'] == 'GET' )
 {
-	// GET calls retrieve entries in a read-only state. Calls will never modify data.
 	define('HTTP_METHOD', 'GET');
 	$request = $_GET;
 
@@ -43,7 +38,6 @@ if ( $_SERVER['REQUEST_METHOD'] == 'GET' )
 }
 elseif ( $_SERVER['REQUEST_METHOD'] == 'POST' )
 {
-	// POST calls create new entries. These always required authorization.
 	define('HTTP_METHOD', 'POST');
 	$request = $_POST;
 
@@ -52,22 +46,6 @@ elseif ( $_SERVER['REQUEST_METHOD'] == 'POST' )
 		unset($request['method']);
 	}
 }
-/*elseif ( $_SERVER['REQUEST_METHOD'] == 'PUT' )
-{
-	// PUT calls update existing entries. These always required authorization.
-	define('HTTP_METHOD', 'PUT');
-	$request = $_PUT;
-
-	if(isset($request['method'])) {
-		define('API_METHOD', $request['method']);
-		unset($request['method']);
-	}
-}
-elseif ( $_SERVER['REQUEST_METHOD'] == 'DELETE' )
-{
-	// DELETE calls delete existing entries. These always required authorization.
-	define('HTTP_METHOD', 'DELETE');
-}*/
 else
 {
 	// Request method unsupported.
@@ -87,34 +65,38 @@ if(!isset($request['method']) && isset($_SERVER['PATH_INFO'])) {
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Authorization, X-Requested-With");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
-header("Access-Control-Expose-Headers: X-RateLimit-Limit, X-RateLimit-Remaining");
+header("Access-Control-Expose-Headers: X-Frame-Options, X-RateLimit-Limit, X-RateLimit-Remaining");
 header("Access-Control-Allow-Credentials: true");
+
+// No soup for you, hackers.
+header("X-Frame-Options: deny");
 
 if ( defined('API_METHOD') )
 {
 	if ( API_METHOD == 'about' )
 	{
+		// Provide some basic information about this installation.
 		$Response->Send(200, RESP_OK, array(
-			'info_url' => CFG_URL,
-			    'name' => CFG_NAME,
-			 'version' => (float)API_VERSION,
+			'info_url'	=> CFG_URL,
+			'name'		=> CFG_NAME,
+			'version'	=> (float)API_VERSION,
 		));
 	}
 	elseif ( API_METHOD == 'ping' )
 	{
+		// Repor that we're OK.
 		$Response->Send(200, RESP_OK, array(
 			'response' => 'OK'
 		));
 	}
 	elseif ( API_METHOD == 'limit' )
 	{
-		// Get an application's current hit cap and remaining hits.
-		// This call does not count against an app's cap.
+		// Get an application's current hit cap and remaining hits. (This call does not count against an app's cap.)
 		@$Application->Set($request['api_secret'], true);
 		$Response->Send(200, RESP_OK, array(
-			   'limit' => (int)$Application->rateLimit(),
-		   'remaining' => (int)$Application->rateRemaining(),
-     'next_expiration' => (int)$Application->rateNextExpiration()
+			'limit'				=> (int)$Application->rateLimit(), // Current hit cap.
+			'remaining'			=> (int)$Application->rateRemaining(), // Hits remaining until cap.
+			'next_expiration'	=> (int)$Application->rateNextExpiration() // How many seconds until the oldest registered hit is set to expire.
 		));
 	}
 	else
@@ -127,6 +109,7 @@ if ( defined('API_METHOD') )
 				require('./lib/api.1-1.php');
 			}
 		} else {
+			// Default to the oldest possible version.
 			require('./lib/api.1-0.php');
 		}
 
