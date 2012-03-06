@@ -45,24 +45,42 @@ elseif ( $_SERVER['REQUEST_METHOD'] == 'POST' )
 {
 	// POST calls create new entries. These always required authorization.
 	define('HTTP_METHOD', 'POST');
-	$request = json_decode(http_get_request_body(), true);
+	$request = $_POST;
+
+	if(isset($request['method'])) {
+		define('API_METHOD', $request['method']);
+		unset($request['method']);
+	}
 }
-elseif ( $_SERVER['REQUEST_METHOD'] == 'PUT' )
+/*elseif ( $_SERVER['REQUEST_METHOD'] == 'PUT' )
 {
 	// PUT calls update existing entries. These always required authorization.
 	define('HTTP_METHOD', 'PUT');
+	$request = $_PUT;
+
+	if(isset($request['method'])) {
+		define('API_METHOD', $request['method']);
+		unset($request['method']);
+	}
 }
 elseif ( $_SERVER['REQUEST_METHOD'] == 'DELETE' )
 {
 	// DELETE calls delete existing entries. These always required authorization.
 	define('HTTP_METHOD', 'DELETE');
-}
+}*/
 else
 {
 	// Request method unsupported.
 	$Respond(501, RESP_ERR, array(
 		'error' => 'Unsupported request method used. GET and POST, PUT and DELETE are supported.'
 	));
+}
+
+// Use the request path as the method. (Preferred Method)
+if(!isset($request['method']) && isset($_SERVER['PATH_INFO'])) {
+	if($_SERVER['PATH_INFO'] != 'index.php' && $_SERVER['PATH_INFO'] != '/') {
+		define('API_METHOD', trim($_SERVER['PATH_INFO'], '/'));
+	}
 }
 
 // Permit cross domain requests.
@@ -79,7 +97,7 @@ if ( defined('API_METHOD') )
 		$Response->Send(200, RESP_OK, array(
 			'info_url' => CFG_URL,
 			    'name' => CFG_NAME,
-			 'version' => API_VERSION,
+			 'version' => (float)API_VERSION,
 		));
 	}
 	elseif ( API_METHOD == 'ping' )
@@ -88,14 +106,15 @@ if ( defined('API_METHOD') )
 			'response' => 'OK'
 		));
 	}
-	elseif ( API_METHOD == 'ratelimit' )
+	elseif ( API_METHOD == 'limit' )
 	{
 		// Get an application's current hit cap and remaining hits.
 		// This call does not count against an app's cap.
 		@$Application->Set($request['api_secret'], true);
 		$Response->Send(200, RESP_OK, array(
-			   'limit' => $Application->data['ratelimit'],
-		   'remaining' => ($Application->data['ratelimit'] - $Application->hits)
+			   'limit' => (int)$Application->rateLimit(),
+		   'remaining' => (int)$Application->rateRemaining(),
+     'next_expiration' => (int)$Application->rateNextExpiration()
 		));
 	}
 	else

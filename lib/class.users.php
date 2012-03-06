@@ -114,43 +114,66 @@ class User
 		}
 	}
 
-	function Hash($update = null)
+	public function Hash($update = null)
 	{
 		return $this->__Property('hash', $update);
 	}
 
-	function Email($update = null)
+	public function Email($update = null)
 	{
 		return $this->__Property('email', $update, FILTER_SANITIZE_EMAIL);
 	}
 
-	function Password($update = null)
+	public function Password($update = null)
 	{
 		return $this->__Property('password', $update);
 	}
 
-	function Question($update = null)
+	public function Question($update = null)
 	{
 		return $this->__Property('question', $update);
 	}
 
-	function Answer($update = null)
+	public function Answer($update = null)
 	{
 		return $this->__Property('answer', $update);
 	}
 
-	function Registered()
+	public function Registered()
 	{
 		return $this->__Property('registered');
 	}
 
-	function Accessed($update = null)
+	public function Accessed($update = null)
 	{
 		return $this->__Property('accessed', $update);
 	}
 
-	function Admin($update = null)
+	public function Admin($update = null)
 	{
+		if ( $update )
+		{
+			if ( $update === TRUE )
+			{
+				$update = 1;
+			}
+			elseif( $update === FALSE )
+			{
+				$update = 0;
+			}
+			elseif ( !is_numeric($update) )
+			{
+				$update = null;
+			}
+			elseif( $update < 1 )
+			{
+				$update = 0;
+			}
+			elseif( $update > 1 )
+			{
+				$update = 1;
+			}
+		}
 		return $this->__Property('admin', $update, FILTER_SANITIZE_NUMBER_INT);
 	}
 

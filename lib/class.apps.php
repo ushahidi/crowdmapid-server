@@ -39,16 +39,12 @@ class Application {
 			{
 				header("X-RateLimit-Limit: {$this->data['ratelimit']}");
 
-				// Delete expired hits.
-				// TODO: Move this to a cron task. We can't have this running every single API call in production.
-				$MySQL->Push('DELETE FROM application_hits WHERE application="' . $MySQL->Clean($this->data['id']) . '" AND stamp < NOW() - ' . CFG_RATELIMIT_SEC);
-
 				// Determine the number of unexpired hits.
-				$this->hits = $MySQL->Pull('SELECT cache_value FROM cache WHERE cache_name="app_hits_count" LIMIT 1;');
+				$this->hits = $MySQL->Pull("SELECT cache_value FROM cache WHERE cache_name='app_hits_count_{$this->data['id']}' LIMIT 1;");
 				$this->hits = $this->hits['cache_value'];
 
 				// Has the application exceeded it's API query limit for the day?
-				if ( $this->hits == $this->data['ratelimit'] )
+				if ( $this->hits >= $this->data['ratelimit'] )
 				{
 					$Response->Send(509, RESP_ERR, array(
 						'error' => 'Your application has made too many API calls recently. Please contact us to inquire about whitelisting.'
@@ -56,12 +52,12 @@ class Application {
 				}
 
 				// Record this request as a new hit.
-				$MySQL->Push('INSERT INTO application_hits (application,method) VALUES ("' . $this->data['id'] . '", "' . API_METHOD . '");');
+				$MySQL->Push('INSERT INTO application_hits (application,method,expires) VALUES ("' . $this->data['id'] . '", "' . API_METHOD . '", NOW() + SEC_TO_TIME(' . CFG_RATELIMIT_SEC . '));');
 				header('X-RateLimit-Remaining: ' . ($this->data['ratelimit'] - $this->hits));
 			}
 		} else {
-				$this->hits = $MySQL->Pull('SELECT COUNT(*) FROM application_hits WHERE application="' . $MySQL->Clean($this->data['id']) . '" AND stamp > NOW() - ' . CFG_RATELIMIT_SEC . ' LIMIT 1;');
-				$this->hits = (int)$this->hits['COUNT(*)'];
+				$this->hits = $MySQL->Pull("SELECT cache_value FROM cache WHERE cache_name='app_hits_count_{$this->data['id']}' LIMIT 1;");
+				$this->hits = $this->hits['cache_value'];
 				header('X-RateLimit-Remaining: ' . ($this->data['ratelimit'] - $this->hits));
 		}
 	}
@@ -95,15 +91,9 @@ class Application {
 	{
 		global $MySQL;
 		$ret = $MySQL->Push('DELETE FROM applications WHERE id=' . $MySQL->Clean($id) . ' LIMIT 1;');
-		if ( $ret )
-		{
-			// Clear out any remaining API hits in the database.
-			$MySQL->Push('DELETE FROM application_hits WHERE application=' . $MySQL->Clean($id) . ';');
-		}
 		return $ret;
 	}
 
-	/*
 	private function __Property($var, $update = null, $filter = null)
 	{
 		if ( $update !== null )
@@ -132,223 +122,100 @@ class Application {
 			return $this->data[$var];
 		}
 	}
-	*/
 
 	// Get or assign the name of the application.
 	public function Name($update = null)
 	{
-		if ( $update !== null )
-		{
-			global $MySQL;
-			$update = $MySQL->Clean(trim(filter_var($update, FILTER_SANITIZE_STRING)));
-
-			if ( $update !== null )
-			{
-				$ret = $MySQL->Push('UPDATE applications SET name="' . $update . '" WHERE id=' . $this->data['id'] . ' LIMIT 1;');
-				if ( $ret )
-				{
-					$this->data['name'] = $update;
-					return $this->data['name'];
-				}
-			}
-		}
-		else
-		{
-			return $this->data['name'];
-		}
+		return $this->__Property('name', $update);
 	}
 
 	// Get or assign a user-facing address related to the application; i.e. http://crowdmap.com
 	public function URL($update = null)
 	{
-		if ( $update !== null )
-		{
-			global $MySQL;
-			$update = $MySQL->Clean(trim(filter_var($update, FILTER_SANITIZE_URL)));
-
-			if ( $update !== null )
-			{
-				$ret = $MySQL->Push('UPDATE applications SET url="' . $update . '" WHERE id=' . $this->data['id'] . ' LIMIT 1;');
-				if ( $ret )
-				{
-					$this->data['url'] = $update;
-					return $this->data['url'];
-				}
-			}
-		}
-		else
-		{
-			return $this->data['url'];
-		}
+		return $this->__Property('url', $update, FILTER_SANITIZE_URL);
 	}
 
 	// Get or assign the secret for the application. Must be a string of 64 characters.
 	public function Secret($update = null)
 	{
-		if ( $update !== null && strlen($update === 64) )
-		{
-			global $MySQL;
-			$update = $MySQL->Clean(trim(filter_var($update, FILTER_SANITIZE_STRING)));
-
-			if ( $update !== null )
-			{
-				$ret = $MySQL->Push('UPDATE applications SET secret="' . $update . '" WHERE id=' . $this->data['id'] . ' LIMIT 1;');
-				if ( $ret )
-				{
-					$this->data['secret'] = $update;
-					return $this->data['secret'];
-				}
-			}
-		}
-		else
-		{
-			return $this->data['secret'];
-		}
+		return $this->__Property('secret', $update);
 	}
 
 	// Get or assign the API hit cap for the application. This is X hits over CFG_RATELIMIT_SEC seconds. 0 will whitelist/exempt an app from this.
 	public function rateLimit($update = null)
 	{
-		if ( $update !== null && is_numeric($update) )
-		{
-			global $MySQL;
-			$update = $MySQL->Clean(trim(filter_var($update, FILTER_SANITIZE_NUMBER_INT)));
-
-			if ( $update !== null && is_numeric($update) )
-			{
-				$ret = $MySQL->Push('UPDATE applications SET ratelimit="' . $update . '" WHERE id=' . $this->data['id'] . ' LIMIT 1;');
-				if ( $ret )
-				{
-					$this->data['ratelimit'] = $update;
-					return $this->data['ratelimit'];
-				}
-			}
-		}
-		else
-		{
-			return $this->data['ratelimit'];
-		}
+		return $this->__Property('ratelimit', $update, FILTER_SANITIZE_NUMBER_INT);
 	}
 
 	// Get the number of hits remaining before the application hits it's API cap.
 	public function rateRemaining()
 	{
+		$limit = $this->rateLimit();
+		if($limit > 0) return $limit - $this->hits;
 		return $this->hits;
+	}
+
+	// Determine when the next hit in the database is set to expire. This is intended to indicate when the next API hit will theoretically free up if an app has reached it's limit.
+	public function rateNextExpiration()
+	{
+		// Are we whitelisted?
+		if ($this->rateLimit() === 0) return 0;
+
+		global $MySQL;
+		$expire = $MySQL->Pull("SELECT TIME_TO_SEC(expires - NOW()) as nextexpire FROM application_hits WHERE application={$this->data['id']} AND expires > NOW() ORDER BY expires ASC LIMIT 1;");
+		
+		// No expirations pending:
+		if(!$expire) return 0;
+
+		// Report next expiration, and tack on a 5 second margin of error (as the scheduler does not run every second)
+		return (int)$expire['nextexpire'] + 5;
 	}
 
 	// Get or assign an internal note relating to the application. This should never, ever be exposed over the API.
 	public function Note($update = null)
 	{
-		if ( $update !== null )
-		{
-			global $MySQL;
-			$update = $MySQL->Clean(trim(filter_var($update, FILTER_SANITIZE_STRING)));
-
-			if ( $update !== null )
-			{
-				$ret = $MySQL->Push('UPDATE applications SET note="' . $update . '" WHERE id=' . $this->data['id'] . ' LIMIT 1;');
-				if ( $ret )
-				{
-					$this->data['note'] = $update;
-					return $this->data['note'];
-				}
-			}
-		}
-		else
-		{
-			return $this->data['note'];
-		}
+		return $this->__Property('note', $update);
 	}
 
 	// Get or assign the contact's email address. This should go to a Real Human(tm) in charge of the development of the assigned application, as we may need to send notices to this address later if there are problems with their API reaching hit cap, etc.
 	public function adminEmail($update = null)
 	{
-		if ( $update !== null )
-		{
-			global $MySQL;
-			$update = $MySQL->Clean(trim(filter_var($update, FILTER_SANITIZE_EMAIL)));
-
-			if ( $update !== null )
-			{
-				$ret = $MySQL->Push('UPDATE applications SET admin_email="' . $update . '" WHERE id=' . $this->data['id'] . ' LIMIT 1;');
-				if ( $ret )
-				{
-					$this->data['admin_email'] = $update;
-					return $this->data['admin_email'];
-				}
-			}
-		}
-		else
-		{
-			return $this->data['admin_email'];
-		}
+		return $this->__Property('admin_email', $update, FILTER_SANITIZE_EMAIL);
 	}
 
 	// Get or assign the contact identity (individual's name, organization, etc.) in charge of the application.
 	public function adminIdentity($update = null)
 	{
-		if ( $update !== null )
-		{
-			global $MySQL;
-			$update = $MySQL->Clean(trim(filter_var($update, FILTER_SANITIZE_STRING)));
-
-			if ( $update !== null )
-			{
-				$ret = $MySQL->Push('UPDATE applications SET admin_identity="' . $update . '" WHERE id=' . $this->data['id'] . ' LIMIT 1;');
-				if ( $ret )
-				{
-					$this->data['admin_identity'] = $update;
-					return $this->data['admin_identity'];
-				}
-			}
-		}
-		else
-		{
-			return $this->data['admin_identity'];
-		}
+		return $this->__Property('admin_identity', $update);
 	}
 
 	// Toggle API debugging for this app; exposes additional diagnostic data with API returns.
 	public function Debug($update = null)
 	{
-		if ( $update !== null )
+		if ( $update )
 		{
-			// Accept boolean values.
 			if ( $update === TRUE )
 			{
 				$update = 1;
 			}
-			elseif ( $update === FALSE )
+			elseif( $update === FALSE )
 			{
 				$update = 0;
 			}
-
-			global $MySQL;
-			$update = $MySQL->Clean(trim(filter_var($update, FILTER_SANITIZE_NUMBER_INT)));
-
-			if ( $update > 1 )
+			elseif ( !is_numeric($update) )
+			{
+				$update = null;
+			}
+			elseif( $update < 1 )
+			{
+				$update = 0;
+			}
+			elseif( $update > 1 )
 			{
 				$update = 1;
 			}
-			elseif ( $update < 1 )
-			{
-				$update = 0;
-			}
-
-			if ( is_numeric($update) )
-			{
-				$ret = $MySQL->Push('UPDATE applications SET debug="' . $update . '" WHERE id=' . $this->data['id'] . ' LIMIT 1;');
-				if ( $ret )
-				{
-					$this->data['debug'] = $update;
-					return $this->data['debug'];
-				}
-			}
 		}
-		else
-		{
-			return $this->data['debug'];
-		}
+		return $this->__Property('debug', $update, FILTER_SANITIZE_NUMBER_INT);
 	}
 
 	// Get the timestamp of when the application was registered.
