@@ -76,11 +76,11 @@ if ( defined('API_METHOD') )
 	if ( API_METHOD == 'about' )
 	{
 		// Provide some basic information about this installation.
-		$Response->Send(200, RESP_OK, array(
+		$Response->Send(200, RESP_OK, array('response' => array(
 			'info_url'	=> CFG_URL,
 			'name'		=> CFG_NAME,
-			'version'	=> (float)API_VERSION,
-		));
+			'version'	=> (string)API_VERSION
+		)));
 	}
 	elseif ( API_METHOD == 'ping' )
 	{
@@ -93,11 +93,11 @@ if ( defined('API_METHOD') )
 	{
 		// Get an application's current hit cap and remaining hits. (This call does not count against an app's cap.)
 		@$Application->Set($request['api_secret'], true);
-		$Response->Send(200, RESP_OK, array(
+		$Response->Send(200, RESP_OK, array('response' => array(
 			'limit'				=> (int)$Application->rateLimit(), // Current hit cap.
 			'remaining'			=> (int)$Application->rateRemaining(), // Hits remaining until cap.
 			'next_expiration'	=> (int)$Application->rateNextExpiration() // How many seconds until the oldest registered hit is set to expire.
-		));
+		)));
 	}
 	else
 	{

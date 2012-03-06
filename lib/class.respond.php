@@ -99,7 +99,7 @@ class Response {
 		header('Content-Type: text/javascript');
 
 		$resp = array();
-		$resp['status'] = (string)$success;
+		$resp['success'] = (bool)$success;
 
 		if(defined('API_METHOD')) {
 			$resp['method'] = API_METHOD;
@@ -107,16 +107,16 @@ class Response {
 
 		$callback = null;
 		if(isset($request)) {
-			$resp['request'] = $request;
-			if ( isset($resp['request']['api_secret']) )
+			$resp['request'] = (object) $request;
+			if ( isset($resp['request']->api_secret) )
 			{
-				unset($resp['request']['api_secret']);
+				unset($resp['request']->api_secret);
 			}
 
-			if ( isset($resp['request']['callback']) )
+			if ( isset($resp['request']->callback) )
 			{
-				$callback = $resp['request']['callback'];
-				unset($resp['request']['callback']);
+				$callback = $resp['request']->callback;
+				unset($resp['request']->callback);
 			}
 		}
 
