@@ -13,7 +13,7 @@ class Security
 	public function Generate($length)
 	{
 		$chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-		$charLen = strlen($chars);
+		$charLen = strlen($chars) - 1;
 		$built = '';
 
 		mt_srand((int)microtime(true));

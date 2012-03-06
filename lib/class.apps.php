@@ -31,34 +31,26 @@ class Application {
 			));
 		}
 
+		// Determine the number of unexpired hits.
+		$this->hits = $MySQL->Pull("SELECT cache_value FROM cache WHERE cache_name='app_hits_count_{$this->data['id']}' LIMIT 1;");
+		$this->hits = $this->hits['cache_value'];
+		header('X-RateLimit-Remaining: ' . ($this->data['ratelimit'] - $this->hits));
+
 		// Was this a free API call?
-		if ( $free == false ) {
+		if ( $free == false AND $this->data['ratelimit'] > 0)
+		{
+			header("X-RateLimit-Limit: {$this->data['ratelimit']}");
 
-			// Check if we're dealing with a whitelisted application.
-			if ( $this->data['ratelimit'] > 0)
+			// Has the application exceeded it's API query limit for the day?
+			if ( $this->hits >= $this->data['ratelimit'] )
 			{
-				header("X-RateLimit-Limit: {$this->data['ratelimit']}");
-
-				// Determine the number of unexpired hits.
-				$this->hits = $MySQL->Pull("SELECT cache_value FROM cache WHERE cache_name='app_hits_count_{$this->data['id']}' LIMIT 1;");
-				$this->hits = $this->hits['cache_value'];
-
-				// Has the application exceeded it's API query limit for the day?
-				if ( $this->hits >= $this->data['ratelimit'] )
-				{
-					$Response->Send(509, RESP_ERR, array(
-						'error' => 'Your application has made too many API calls recently. Please contact us to inquire about whitelisting.'
-					));
-				}
-
-				// Record this request as a new hit.
-				$MySQL->Push('INSERT INTO application_hits (application,method,expires) VALUES ("' . $this->data['id'] . '", "' . API_METHOD . '", NOW() + SEC_TO_TIME(' . CFG_RATELIMIT_SEC . '));');
-				header('X-RateLimit-Remaining: ' . ($this->data['ratelimit'] - $this->hits));
+				$Response->Send(509, RESP_ERR, array(
+					'error' => 'Your application has made too many API calls recently. Please contact us to inquire about whitelisting.'
+				));
 			}
-		} else {
-				$this->hits = $MySQL->Pull("SELECT cache_value FROM cache WHERE cache_name='app_hits_count_{$this->data['id']}' LIMIT 1;");
-				$this->hits = $this->hits['cache_value'];
-				header('X-RateLimit-Remaining: ' . ($this->data['ratelimit'] - $this->hits));
+
+			// Record this request as a new hit.
+			$MySQL->Push('INSERT INTO application_hits (application,method,expires) VALUES ("' . $this->data['id'] . '", "' . API_METHOD . '", NOW() + SEC_TO_TIME(' . CFG_RATELIMIT_SEC . '));');
 		}
 	}
 
