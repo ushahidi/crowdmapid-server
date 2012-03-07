@@ -34,10 +34,41 @@ elseif ( ( API_METHOD == 'checkpassword' || API_METHOD == 'check_password' ) )
 elseif ( API_METHOD == 'register' )
 {
 	api_expectations(array('email', 'password'));
+
+	if ( $User->Set($request['email']) )
+	{
+		$Response->Send(200, RESP_ERR, array(
+			'error' => 'This email address is already in use.'
+		));
+	}
+
+	$resp = $User->Create($request['email'], $request['password']);
+
+	if ( $resp )
+	{
+		$Response->Send(200, RESP_OK, array(
+			'response' => $resp['hash']
+		));
+	}
+
+	$Response->Send(200, RESP_ERR, array(
+		'error' => 'We encountered a problem while attempting to register your address. Please try again shortly.'
+	));
 }
 elseif ( API_METHOD == 'registered' )
 {
 	api_expectations(array('email'));
+	
+	if ( $User->Set($request['email']) )
+	{
+		$Response->Send(200, RESP_OK, array(
+			'response' => true
+		));
+	}
+
+	$Response->Send(200, RESP_OK, array(
+		'response' => false
+	));
 }
 elseif ( ( API_METHOD == 'requestpassword' || API_METHOD == 'request_password' ) )
 {

@@ -14,12 +14,12 @@ class User
 		$_id = $MySQL->Clean($id);
 		  $r = null;
 
-		if ( strlen($id) == 128 )
+		if ( strlen($id) === 128 )
 		{
 			// Passing a user hash.
 			$r = $MySQL->Pull("SELECT * FROM users WHERE hash='{$_id}' LIMIT 1;");
 		}
-		elseif ( strlen($id) == 64 )
+		elseif ( strlen($id) === 64 )
 		{
 			// Passing a session hash.
 			$r = $MySQL->Pull("SELECT user FROM user_sessions WHERE hash='{$_id}' LIMIT 1;");
@@ -28,7 +28,7 @@ class User
 				$r = $MySQL->Pull("SELECT * FROM users WHERE id='{$r['user']}' LIMIT 1;");
 			}
 		}
-		elseif ( strpos($id, '@') )
+		elseif ( strpos($id, '@') !== FALSE && strpos($id, '.') !== FALSE )
 		{
 			// Passing an email address.
 			$r = $MySQL->Pull("SELECT * FROM users WHERE email='{$_id}' LIMIT 1;");
@@ -42,7 +42,10 @@ class User
 		if ( $r )
 		{
 			$this->data = $r;
+			return true;
 		}
+
+		return false;
 	}
 
 	public function Create($email, $password, $question = '', $answer = '')

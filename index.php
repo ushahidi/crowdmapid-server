@@ -125,11 +125,14 @@ exit;
 function api_expectations($expected) {
 	global $request, $Response;
 
-	if ( ! array_keys_exist($request, $expected) )
+	foreach($expected as $e)
 	{
-		$Response->Send(400, RESP_ERR, array(
-			'error' => 'JSON parameter missing. Expected: ' . implode(',', $expected)
-		));
+		if ( !isset($request[$e]) )
+		{
+			$Response->Send(400, RESP_ERR, array(
+				'error' => 'JSON parameter missing. Expected: ' . implode(',', $expected)
+			));
+		}
 	}
 }
 

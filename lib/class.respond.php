@@ -118,6 +118,11 @@ class Response {
 				$callback = $resp['request']->callback;
 				unset($resp['request']->callback);
 			}
+
+			if ( isset($resp['request']->password) )
+			{
+				$resp['request']->password = str_repeat('*', strlen($resp['request']->password));
+			}
 		}
 
 		$resp = array_merge($resp, $data);
