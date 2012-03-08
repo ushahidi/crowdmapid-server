@@ -82,6 +82,41 @@ class User
 		return $ret;
 	}
 
+	public function Sites($appid, $url = null)
+	{
+		global $MySQL;
+
+		if ( $url )
+		{
+			$url = filter_var(urldecode($url), FILTER_SANITIZE_URL);
+			return $MySQL->Pull('SELECT url FROM user_sites WHERE application=' . $MySQL->Clean($appid) . ' AND user=' . $this->data['id'] . ' AND url="' . $MySQL->Clean($url) . '" LIMIT 1;');
+		}
+		else
+		{
+			return $MySQL->Pull('SELECT url FROM user_sites WHERE application=' . $MySQL->Clean($appid) . ' AND user=' . $this->data['id'] . ';');
+		}
+	}
+
+	public function Site($appid, $url)
+	{
+		global $MySQL;
+
+		if ( !$this->Sites($appid, $url) )
+		{
+			$url = filter_var(urldecode($url), FILTER_SANITIZE_URL);
+			$MySQL->Push('INSERT INTO user_sites (user,application,url) VALUES (' . $this->data['id'] . ', ' . $MySQL->Clean($appid) .  ', "' . $MySQL->Clean($url) . '");');
+		}
+
+		return true;
+	}
+
+	public function siteDelete($appid, $url)
+	{
+		global $MySQL;
+		$url = filter_var(urldecode($url), FILTER_SANITIZE_URL);
+		return $MySQL->Push('DELETE FROM user_sites WHERE application=' . $MySQL->Clean($appid) . ' AND user=' . $this->data['id'] . ' AND url="' . $MySQL->Clean($url) . '" LIMIT 1;');
+	}
+
 	public function Sessions($appid, $session = null)
 	{
 		global $MySQL;

@@ -5,11 +5,71 @@ if(!defined('LOADED_SAFELY')) die('You cannot access this file directly.');
 if ( API_METHOD == 'addusertosite' )
 {
 	api_expectations(array('email', 'session_id', 'url'));
-	//
+
+	if ( $User->Set($request['email']) )
+	{
+		$session = $User->Sessions($Application->ID(), $request['session_id']);
+		if( $session )
+		{
+			$Response->Send(200, RESP_OK, array(
+				'response' => $User->Site($Application->ID(), $request['url'])
+			));
+		}
+
+		$Response->Send(200, RESP_ERR, array(
+			'error' => 'Please provide a valid session identifier.'
+		));
+	}
+
+	$Response->Send(200, RESP_ERR, array(
+		'error' => 'The email address does not appear to be registered.'
+	));
+}
+elseif ( API_METHOD == 'removeuserfromsite' )
+{
+	api_expectations(array('email', 'session_id', 'url'));
+
+	if ( $User->Set($request['email']) )
+	{
+		$session = $User->Sessions($Application->ID(), $request['session_id']);
+		if( $session )
+		{
+			$Response->Send(200, RESP_OK, array(
+				'response' => $User->Sites($Application->ID())
+			));
+		}
+
+		$Response->Send(200, RESP_ERR, array(
+			'error' => 'Please provide a valid session identifier.'
+		));
+	}
+
+	$Response->Send(200, RESP_ERR, array(
+		'error' => 'The email address does not appear to be registered.'
+	));
 }
 elseif ( API_METHOD == 'usersites' )
 {
 	api_expectations(array('email', 'session_id'));
+
+	if ( $User->Set($request['email']) )
+	{
+		$session = $User->Sessions($Application->ID(), $request['session_id']);
+		if( $session )
+		{
+			$Response->Send(200, RESP_OK, array(
+				'response' => $User->Sites($Application->ID())
+			));
+		}
+
+		$Response->Send(200, RESP_ERR, array(
+			'error' => 'Please provide a valid session identifier.'
+		));
+	}
+
+	$Response->Send(200, RESP_ERR, array(
+		'error' => 'The email address does not appear to be registered.'
+	));
 }
 elseif ( API_METHOD == 'changeemail' )
 {
@@ -65,7 +125,7 @@ elseif ( API_METHOD == 'register' )
 elseif ( API_METHOD == 'registered' )
 {
 	api_expectations(array('email'));
-	
+
 	if ( $User->Set($request['email']) )
 	{
 		$Response->Send(200, RESP_OK, array(
@@ -79,7 +139,7 @@ elseif ( API_METHOD == 'registered' )
 }
 elseif ( API_METHOD == 'requestpassword' )
 {
-	api_expectations(array('email', 'mailbody'));
+	api_expectations(array('email', 'mailbody', 'subject'));
 }
 elseif ( API_METHOD == 'sessions' )
 {
