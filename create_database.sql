@@ -3,7 +3,7 @@
 -- Server version:               5.1.41-3ubuntu12.10 - (Ubuntu)
 -- Server OS:                    debian-linux-gnu
 -- HeidiSQL version:             7.0.0.4053
--- Date/time:                    2012-03-07 23:01:57
+-- Date/time:                    2012-03-08 16:32:14
 -- --------------------------------------------------------
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -100,6 +100,18 @@ CREATE TABLE IF NOT EXISTS `user_sessions` (
 DELIMITER //
 CREATE EVENT `user_sessions_expire` ON SCHEDULE EVERY 5 MINUTE STARTS '2012-01-01 00:00:00' ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Clear out expired sessions.' DO DELETE FROM user_sessions WHERE expire < NOW()//
 DELIMITER ;
+
+
+-- Dumping structure for table riverid.user_sites
+CREATE TABLE IF NOT EXISTS `user_sites` (
+  `id` int(10) NOT NULL AUTO_INCREMENT,
+  `user` int(10) DEFAULT '0' COMMENT 'Assigned user.',
+  `application` int(10) DEFAULT '0' COMMENT 'Assigned application.',
+  `url` varchar(256) DEFAULT '0' COMMENT 'Associated website address.',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+-- Data exporting was unselected.
 
 
 -- Dumping structure for trigger riverid.application_hits_add
