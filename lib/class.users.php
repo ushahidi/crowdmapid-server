@@ -75,17 +75,54 @@ class User
 		return false;
 	}
 
-	// Delete an application from the registry.
-	public function Delete($id = null)
+	public function Delete()
 	{
 		global $MySQL;
-		$ret = $MySQL->Push('DELETE FROM users WHERE id=' . $MySQL->Clean($id) . ' LIMIT 1;');
-		/*if ( $ret )
-		{
-			// Clear out any remaining API hits in the database.
-			$MySQL->Push('DELETE FROM user_sessions WHERE user=' . $MySQL->Clean($id) . ';');
-		}*/
+		$ret = $MySQL->Push('DELETE FROM users WHERE id=' . $this->data['id'] . ' LIMIT 1;');
 		return $ret;
+	}
+
+	public function Sessions($appid, $session = null)
+	{
+		global $MySQL;
+
+		if ( $session )
+		{
+			return $MySQL->Pull('SELECT session as id, expire as expires FROM user_sessions WHERE application=' . $MySQL->Clean($appid) . ' AND user=' . $this->data['id'] . ' AND session="' . $MySQL->Clean($session) . '" LIMIT 1;');
+		}
+		else
+		{
+			return $MySQL->Pull('SELECT session as id, expire as expires FROM user_sessions WHERE application=' . $MySQL->Clean($appid) . ' AND user=' . $this->data['id'] . ';');
+		}
+	}
+
+	public function Session($appid)
+	{
+		global $Security, $MySQL;
+
+		$session = null;
+		$dupe = 1;
+
+		while ( $dupe )
+		{
+			$session = $Security->randHash(64);
+			$dupe = $MySQL->Pull("SELECT COUNT(*) FROM user_sessions WHERE session='{$session}' LIMIT 1;");
+			$dupe = (int)$dupe['COUNT(*)'];
+		}
+
+		$ret = $MySQL->Push('INSERT INTO user_sessions (user,application,session,expire) VALUES (' . $this->data['id'] . ', ' . $MySQL->Clean($appid) .  ', "' . $MySQL->Clean($session) . '", TIMESTAMPADD(SECOND, ' . CFG_USER_SESSION_EXPIRES . ', NOW()));');
+		return $session;
+	}
+
+	public function sessionDelete($appid, $session)
+	{
+		if ( !$session OR strlen($session) != 64 )
+		{
+			return false;
+		}
+
+		global $MySQL;
+		return $MySQL->Push('DELETE FROM user_sessions WHERE application=' . $MySQL->Clean($appid) . ' AND user=' . $this->data['id'] . ' AND session="' . $MySQL->Clean($session) . '" LIMIT 1;');
 	}
 
 	private function __Property($var, $update = null, $filter = null)

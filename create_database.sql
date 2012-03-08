@@ -3,7 +3,7 @@
 -- Server version:               5.1.41-3ubuntu12.10 - (Ubuntu)
 -- Server OS:                    debian-linux-gnu
 -- HeidiSQL version:             7.0.0.4053
--- Date/time:                    2012-03-06 12:21:44
+-- Date/time:                    2012-03-07 23:01:57
 -- --------------------------------------------------------
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS `cache` (
 
 -- Dumping structure for event riverid.cache_hits_expire
 DELIMITER //
-CREATE EVENT `cache_hits_expire` ON SCHEDULE EVERY 5 SECOND STARTS '2012-03-04 23:35:34' ON COMPLETION PRESERVE ENABLE COMMENT 'Clears out expired API hits.' DO DELETE FROM application_hits WHERE expires < NOW()//
+CREATE EVENT `cache_hits_expire` ON SCHEDULE EVERY 5 SECOND STARTS '2012-01-01 00:00:00' ON COMPLETION PRESERVE ENABLE COMMENT 'Clears out expired API hits.' DO DELETE FROM application_hits WHERE expires < NOW()//
 DELIMITER ;
 
 
@@ -81,6 +81,25 @@ CREATE TABLE IF NOT EXISTS `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Data exporting was unselected.
+
+
+-- Dumping structure for table riverid.user_sessions
+CREATE TABLE IF NOT EXISTS `user_sessions` (
+  `id` int(10) NOT NULL AUTO_INCREMENT,
+  `user` int(10) DEFAULT NULL COMMENT 'Row id of the represented user from the users table.',
+  `application` int(10) DEFAULT NULL COMMENT 'Row id representing the assigned application.',
+  `session` char(64) DEFAULT NULL COMMENT '64-character alphanumeric unique session identifier.',
+  `expire` timestamp NULL DEFAULT NULL COMMENT 'When this session should expire if unused.',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+-- Data exporting was unselected.
+
+
+-- Dumping structure for event riverid.user_sessions_expire
+DELIMITER //
+CREATE EVENT `user_sessions_expire` ON SCHEDULE EVERY 5 MINUTE STARTS '2012-01-01 00:00:00' ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Clear out expired sessions.' DO DELETE FROM user_sessions WHERE expire < NOW()//
+DELIMITER ;
 
 
 -- Dumping structure for trigger riverid.application_hits_add

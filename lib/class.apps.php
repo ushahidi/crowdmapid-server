@@ -50,7 +50,7 @@ class Application {
 			}
 
 			// Record this request as a new hit.
-			$MySQL->Push('INSERT INTO application_hits (application,method,expires) VALUES ("' . $this->data['id'] . '", "' . API_METHOD . '", NOW() + SEC_TO_TIME(' . CFG_RATELIMIT_SEC . '));');
+			$MySQL->Push('INSERT INTO application_hits (application,method,expires) VALUES ("' . $this->data['id'] . '", "' . API_METHOD . '", TIMESTAMPADD(SECOND, ' . CFG_RATELIMIT_SEC . ', NOW()));');
 		}
 	}
 
@@ -113,6 +113,12 @@ class Application {
 		{
 			return $this->data[$var];
 		}
+	}
+
+	// Get the application row ID.
+	public function ID()
+	{
+		return $this->data['id'];
 	}
 
 	// Get or assign the name of the application.
