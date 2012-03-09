@@ -2,8 +2,8 @@
 -- Host:                         10.0.1.9
 -- Server version:               5.1.41-3ubuntu12.10 - (Ubuntu)
 -- Server OS:                    debian-linux-gnu
--- HeidiSQL version:             7.0.0.4053
--- Date/time:                    2012-03-08 16:32:14
+-- HeidiSQL version:             7.0.0.4085
+-- Date/time:                    2012-03-09 17:23:11
 -- --------------------------------------------------------
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS `applications` (
   `url` varchar(255) DEFAULT '' COMMENT 'User-facing URL for the application/website.',
   `secret` char(64) DEFAULT NULL COMMENT 'A secret hash to secure communication.',
   `ratelimit` mediumint(9) DEFAULT '5000' COMMENT 'The maximum number of hits an application can make against the API before it is cut off. 0 turns off this limit for the application.',
+  `mail_from` varchar(255) DEFAULT '',
   `note` text COMMENT 'For internal use only.',
   `admin_email` varchar(255) DEFAULT '' COMMENT 'Contact address',
   `admin_identity` varchar(255) DEFAULT '' COMMENT 'Contact name',
@@ -108,7 +109,8 @@ CREATE TABLE IF NOT EXISTS `user_sites` (
   `user` int(10) DEFAULT '0' COMMENT 'Assigned user.',
   `application` int(10) DEFAULT '0' COMMENT 'Assigned application.',
   `url` varchar(256) DEFAULT '0' COMMENT 'Associated website address.',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `url` (`url`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- Data exporting was unselected.

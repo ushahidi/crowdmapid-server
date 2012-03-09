@@ -161,12 +161,18 @@ class Application {
 
 		global $MySQL;
 		$expire = $MySQL->Pull("SELECT TIME_TO_SEC(expires - NOW()) as nextexpire FROM application_hits WHERE application={$this->data['id']} AND expires > NOW() ORDER BY expires ASC LIMIT 1;");
-		
+
 		// No expirations pending:
 		if(!$expire) return 0;
 
 		// Report next expiration, and tack on a 5 second margin of error (as the scheduler does not run every second)
 		return (int)$expire['nextexpire'] + 5;
+	}
+
+	// Get or assign the email address mailings should be identified by; i.e. Crowdmap <support@crowdmap.com>
+	public function mailFrom($update = null)
+	{
+		return $this->__Property('mail_from', $update, FILTER_SANITIZE_EMAIL);
 	}
 
 	// Get or assign an internal note relating to the application. This should never, ever be exposed over the API.
