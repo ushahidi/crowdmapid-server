@@ -35,7 +35,7 @@ elseif ( API_METHOD == 'removeuserfromsite' )
 		if( $session )
 		{
 			$Response->Send(200, RESP_OK, array(
-				'response' => $User->Sites($Application->ID())
+				'response' => $User->siteDelete($Application->ID(), $request['url'])
 			));
 		}
 
@@ -90,6 +90,29 @@ elseif ( API_METHOD == 'changepassword' )
 elseif ( API_METHOD == 'checkpassword' )
 {
 	api_expectations(array('email', 'password'));
+
+	if ( $User->Set($request['email']) )
+	{
+		$password = $Security->Hash($request['password'], 64);
+		if ( $User->Password() === $password )
+		{
+			$session = $User->Session($Application->ID());
+
+			$Response->Send(200, RESP_OK, array(
+				'response' => true
+			));
+		}
+		else
+		{
+			$Response->Send(200, RESP_OK, array(
+				'response' => false
+			));
+		}
+	}
+
+	$Response->Send(200, RESP_ERR, array(
+		'error' => 'The email address does not appear to be registered.'
+	));
 }
 elseif ( API_METHOD == 'register' )
 {
