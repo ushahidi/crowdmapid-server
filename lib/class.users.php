@@ -229,6 +229,11 @@ class User
 		return $this->__Property('token', $update);
 	}
 
+	public function TokenMemory($update = null)
+	{
+		return $this->__Property('token_memory', $update);
+	}
+
 	public function Admin($update = null)
 	{
 		if ( $update )

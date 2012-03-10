@@ -107,9 +107,6 @@ elseif ( API_METHOD == 'changeemail' )
 					));
 				}
 
-				// Update address in database.
-				//$User->Email($request['newemail']);
-
 				// Does the application have a custom mail_from set?
 				$from = CFG_MAIL_FROM;
 				if ( $Application->mailFrom() )
@@ -118,8 +115,11 @@ elseif ( API_METHOD == 'changeemail' )
 				}
 
 				// Generate a one-use token for authorizing this change.
-				$token = strtoupper($Security->randHash(5));
+				$token = strtoupper($Security->randHash(32));
 				$User->Token($token);
+
+				// Memorize the requested address change.
+				$User->TokenMemory($request['newemail']);
 
 				// Replace %token% in mailbody with the necessary authorization code.
 				$request['mailbody'] = trim(filter_var($request['mailbody'], FILTER_SANITIZE_STRING));

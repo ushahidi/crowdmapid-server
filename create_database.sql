@@ -3,7 +3,7 @@
 -- Server version:               5.1.41-3ubuntu12.10 - (Ubuntu)
 -- Server OS:                    debian-linux-gnu
 -- HeidiSQL version:             7.0.0.4085
--- Date/time:                    2012-03-09 17:23:11
+-- Date/time:                    2012-03-10 00:21:28
 -- --------------------------------------------------------
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   `password` char(64) DEFAULT NULL COMMENT 'Partial hash of the user''s password.',
   `question` varchar(256) DEFAULT NULL COMMENT 'Lost password question.',
   `answer` char(128) DEFAULT NULL COMMENT 'Lost password answer.',
+  `token` char(32) DEFAULT NULL COMMENT 'Authorization token for making modifications to the account.',
+  `token_memory` varchar(256) DEFAULT NULL COMMENT 'The pending string alteration assigned to the token.',
   `registered` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Timestamp of when the user registered with the system.',
   `accessed` timestamp NULL DEFAULT NULL COMMENT 'Timestamp of when the user last accessed their account.',
   `admin` tinyint(1) DEFAULT '0' COMMENT 'Is the user an administrator of this RiverID installation?',
