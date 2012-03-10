@@ -116,10 +116,11 @@ elseif ( API_METHOD == 'changeemail' )
 
 				// Generate a one-use token for authorizing this change.
 				$token = strtoupper($Security->randHash(32));
-				$User->Token($token);
-
-				// Memorize the requested address change.
-				$User->TokenMemory($request['newemail']);
+				$User->Token(array(
+					'token' => $token,
+					'memory' => $request['newemail'],
+					'expires' => 172800
+				));
 
 				// Replace %token% in mailbody with the necessary authorization code.
 				$request['mailbody'] = trim(filter_var($request['mailbody'], FILTER_SANITIZE_STRING));
@@ -153,6 +154,44 @@ elseif ( API_METHOD == 'changeemail' )
 elseif ( API_METHOD == 'confirmemail' )
 {
 	api_expectations(array('email', 'token'));
+
+	if ( $User->Set($request['email']) && validateString($request['email']) )
+	{
+		$token = $User->Token();
+
+		if ( $token['token'] === $request['token'] )
+		{
+			if ( $token['expires'] > time() )
+			{
+				// Set email address.
+				$User->Email($token['memory']);
+
+				// Reset token/memory.
+				$User->ClearToken();
+
+				// API response
+				$Response->Send(200, RESP_OK, array(
+					'response' => true
+				));
+			}
+			else
+			{
+				$Response->Send(200, RESP_ERR, array(
+					'error' => 'The submitted token has expired.'
+				));
+			}
+		}
+		else
+		{
+			$Response->Send(200, RESP_OK, array(
+				'response' => false
+			));
+		}
+	}
+
+	$Response->Send(200, RESP_ERR, array(
+		'error' => 'The email address does not appear to be registered.'
+	));
 }
 elseif ( API_METHOD == 'setpassword' )
 {

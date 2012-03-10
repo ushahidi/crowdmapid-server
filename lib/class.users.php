@@ -226,12 +226,39 @@ class User
 
 	public function Token($update = null)
 	{
-		return $this->__Property('token', $update);
+		if ( $update && is_array($update) )
+		{
+			if ( isset($update['token']) )
+			{
+				$this->__Property('token', $update['token']);
+			}
+
+			if ( isset($update['memory']) )
+			{
+				$this->__Property('token_memory', $update['memory']);
+			}
+
+			if ( isset($update['expires']) )
+			{
+				global $MySQL;
+				$stamp = $MySQL->Pull("SELECT TIMESTAMPADD(SECOND, {$update['expires']}, NOW()) as expires LIMIT 1;");
+				$this->__Property('token_expires', $stamp['expires']);
+			}
+		}
+		else
+		{
+			$ret = array();
+			$ret['token'] = $this->__Property('token');
+			$ret['memory'] = $this->__Property('token_memory');
+			$ret['expires'] = strtotime($this->__Property('token_expires'));
+			return $ret;
+		}
 	}
 
-	public function TokenMemory($update = null)
+	public function ClearToken()
 	{
-		return $this->__Property('token_memory', $update);
+		global $MySQL;
+		return $MySQL->Push("UPDATE users SET token = NULL, token_memory = NULL, token_expires = NULL WHERE id={$this->data['id']} LIMIT 1;");
 	}
 
 	public function Admin($update = null)
