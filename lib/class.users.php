@@ -224,6 +224,11 @@ class User
 		return $this->__Property('accessed', $update);
 	}
 
+	public function Token($update = null)
+	{
+		return $this->__Property('token', $update);
+	}
+
 	public function Admin($update = null)
 	{
 		if ( $update )

@@ -24,6 +24,7 @@ require('./lib/class.users.php');			// Users
 require('./lib/class.security.php');		// Security
 //require('./lib/startup.php');				// Make sure everything is in order.
 require('./lib/class.mysql.php');			// MySQL interaction.
+require('./lib/class.mail.php');			// Email management.
 //require('./lib/class.plugins.php');		// Load any available plugins.
 
 if ( $_SERVER['REQUEST_METHOD'] == 'GET' )
@@ -122,7 +123,18 @@ $Response->Send(400, RESP_ERR, array(
 
 exit;
 
-function api_expectations($expected) {
+function validateString($string, $validation = FILTER_VALIDATE_EMAIL)
+{
+	if ( filter_var($string, $validation) )
+	{
+		return true;
+	}
+
+	return false;
+}
+
+function api_expectations($expected)
+{
 	global $request, $Response;
 
 	foreach($expected as $e)
@@ -136,7 +148,8 @@ function api_expectations($expected) {
 	}
 }
 
-function array_keys_exist($array, $search) {
+function array_keys_exist($array, $search)
+{
 	foreach($search as $s) {
 		if(!isset($array[$s])) {
 			return false;
