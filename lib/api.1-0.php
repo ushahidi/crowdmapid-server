@@ -119,7 +119,7 @@ elseif ( API_METHOD == 'changeemail' )
 				$User->Token(array(
 					'token' => $token,
 					'memory' => $request['newemail'],
-					'expires' => 172800
+					'expires' => CFG_TOKEN_EXPIRES
 				));
 
 				// Replace %token% in mailbody with the necessary authorization code.
@@ -193,13 +193,49 @@ elseif ( API_METHOD == 'confirmemail' )
 		'error' => 'The email address does not appear to be registered.'
 	));
 }
-elseif ( API_METHOD == 'setpassword' )
-{
-	api_expectations(array('email', 'token', 'password'));
-}
 elseif ( API_METHOD == 'changepassword' )
 {
 	api_expectations(array('email', 'oldpassword', 'newpassword'));
+
+	if ( $User->Set($request['email']) )
+	{
+		// Encode submitted passwords so we can compare.
+		$request['oldpassword'] = $Security->Hash($request['oldpassword'], 64);
+
+		if ( $User->Password() === $request['oldpassword'] )
+		{
+			if ( strlen($request['newpassword']) < 5 || strlen($request['newpassword']) > 128 )
+			{
+				$Response->Send(200, RESP_ERR, array(
+					'error' => 'Please provide a password between 5 and 128 characters in length.'
+				));
+			}
+
+			$request['newpassword'] = $Security->Hash($request['newpassword'], 64);
+
+			if ( $request['newpassword'] === $request['oldpassword'] )
+			{
+				$Response->Send(200, RESP_ERR, array(
+					'error' => 'You cannot reuse your password.'
+				));
+			}
+
+			$User->Password($request['newpassword']);
+
+			// API response
+			$Response->Send(200, RESP_OK, array(
+				'response' => true
+			));
+		}
+
+		$Response->Send(200, RESP_ERR, array(
+			'error' => 'The password is incorrect for this user.'
+		));
+	}
+
+	$Response->Send(200, RESP_ERR, array(
+		'error' => 'The email address does not appear to be registered.'
+	));
 }
 elseif ( API_METHOD == 'checkpassword' )
 {
@@ -277,7 +313,94 @@ elseif ( API_METHOD == 'registered' )
 }
 elseif ( API_METHOD == 'requestpassword' )
 {
+	// Reset Password, Part 1: Confirmation Email w/ Link.
 	api_expectations(array('email', 'mailbody', 'subject'));
+
+	if ( $User->Set($request['email']) )
+	{
+		// Does the application have a custom mail_from set?
+		$from = CFG_MAIL_FROM;
+		if ( $Application->mailFrom() )
+		{
+			$from = $Application->mailFrom();
+		}
+
+		// Generate a one-use token for authorizing this change.
+		$token = strtoupper($Security->randHash(32));
+		$User->Token(array(
+			'token' => $token,
+			'memory' => 'RESET_PASSWORD',
+			'expires' => CFG_TOKEN_EXPIRES
+		));
+
+		// Replace %token% in mailbody with the necessary authorization code.
+		$request['mailbody'] = trim(filter_var($request['mailbody'], FILTER_SANITIZE_STRING));
+		$request['mailbody'] = str_replace('%token%', $token, $request['mailbody']);
+
+		// Notify user of the address change.
+		$Mailing->Send($from, $request['email'], $request['subject'], $request['mailbody']);
+
+		// API response
+		$Response->Send(200, RESP_OK, array(
+			'response' => true
+		));
+	}
+
+	$Response->Send(200, RESP_ERR, array(
+		'error' => 'The email address does not appear to be registered.'
+	));
+}
+elseif ( API_METHOD == 'setpassword' )
+{
+	// Reset Password, Part 2: Email Confirmed, Set Password
+	api_expectations(array('email', 'token', 'password'));
+
+	if ( $User->Set($request['email']) )
+	{
+		$token = $User->Token();
+
+		if ( $token['token'] === $request['token'] )
+		{
+			if ( $token['expires'] > time() )
+			{
+				if ( strlen($request['password']) < 5 || strlen($request['password']) > 128 )
+				{
+					$Response->Send(200, RESP_ERR, array(
+						'error' => 'Please provide a password between 5 and 128 characters in length.'
+					));
+				}
+
+				$request['password'] = $Security->Hash($request['password'], 64);
+
+				// Set password.
+				$User->Password($request['password']);
+
+				// Reset token/memory.
+				$User->ClearToken();
+
+				// API response
+				$Response->Send(200, RESP_OK, array(
+					'response' => true
+				));
+			}
+			else
+			{
+				$Response->Send(200, RESP_ERR, array(
+					'error' => 'The submitted token has expired.'
+				));
+			}
+		}
+		else
+		{
+			$Response->Send(200, RESP_ERR, array(
+				'error' => 'The submitted token is invalid.'
+			));
+		}
+	}
+
+	$Response->Send(200, RESP_ERR, array(
+		'error' => 'The email address does not appear to be registered.'
+	));
 }
 elseif ( API_METHOD == 'sessions' )
 {

@@ -128,7 +128,7 @@ class Response {
 		$resp = array_merge($resp, $data);
 
 		if(defined('BENCHMARK')) {
-			$resp['benchmark'] = round((microtime() - BENCHMARK), 4);
+			$resp['benchmark'] = round((microtime(true) - BENCHMARK), 4);
 		}
 
 		$resp = json_encode($resp);

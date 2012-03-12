@@ -39,14 +39,14 @@ class Mailing {
 					$http_status = (int)curl_getinfo($session, CURLINFO_HTTP_CODE);
 					@curl_close($session);
 
-					if ( $http_status == 400 && $response->message !== 'error' )
+					if ( $http_status == 200 && $response->message !== 'error' )
 					{
 						// Send was successful.
 						return true;
 					}
 					else
 					{
-						// Sendgrid call failed; fall back to standard mail.
+						// Sendgrid call failed; try falling back to standard mail().
 						return $this->Send($from, $to, $subject, $message, true);
 					}
 				}

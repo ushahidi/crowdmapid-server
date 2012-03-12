@@ -1,7 +1,7 @@
 <?php
 
 // Start benchmark timer.
-define('BENCHMARK', microtime());
+define('BENCHMARK', microtime(true));
 
 // Ensure that libraries/modules are only loaded through safe means.
 define('LOADED_SAFELY', true);
@@ -10,8 +10,8 @@ define('LOADED_SAFELY', true);
 define('API_VERSION', '1.1');
 
 // Just a string representation of success or failure. The "status" JSON response.
-define("RESP_ERR", "false");
-define("RESP_OK", "true");
+define("RESP_ERR", false);
+define("RESP_OK", true);
 
 // The request variable contains a breakdown of the incoming API call.
 $request = array();
@@ -19,10 +19,8 @@ $request = array();
 require('./config.php');					// Import configuration.
 require('./lib/class.respond.php');			// Response formatter.
 require('./lib/class.apps.php');			// API Access Control
-//require('./lib/class.sites.php');			// Sites
 require('./lib/class.users.php');			// Users
 require('./lib/class.security.php');		// Security
-//require('./lib/startup.php');				// Make sure everything is in order.
 require('./lib/class.mysql.php');			// MySQL interaction.
 require('./lib/class.mail.php');			// Email management.
 //require('./lib/class.plugins.php');		// Load any available plugins.
