@@ -25,6 +25,15 @@ require('./lib/class.mysql.php');			// MySQL interaction.
 require('./lib/class.mail.php');			// Email management.
 //require('./lib/class.plugins.php');		// Load any available plugins.
 
+// Connect to our memcache server.
+$cache = new Memcache;
+$cache->connect(CFG_MEMCACHED, 11211);
+if ( ! $cache) {
+	$Response->Send(503, RESP_ERR, array(
+		   'error' => 'Service is currently unavailable. (Memcache)'
+	));
+}
+
 if ( $_SERVER['REQUEST_METHOD'] == 'GET' )
 {
 	define('HTTP_METHOD', 'GET');

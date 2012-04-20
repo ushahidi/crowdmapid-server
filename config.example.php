@@ -13,6 +13,9 @@ define(         'CFG_NAME',  'YourID' );
 define(          'CFG_URL',  'http://yourdomain.com' );
 define(    'CFG_MAIL_FROM',  'You <you@yourdomain.com>' );
 
+// Memcached connectivity.
+define(    'CFG_MEMCACHED',  '127.0.0.1' );
+
 // Database connectivity.
 define(     'CFG_SQL_HOST',  '127.0.0.1' );
 define(     'CFG_SQL_USER',  'root' );
