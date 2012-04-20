@@ -43,7 +43,10 @@ class Application {
 		// Invalid API key, or no API key was provided.
 		if ( ! $this->data )
 		{
-			$cache->set('riverid_app_' . $key, 'nein', MEMCACHE_COMPRESSED, 0);
+			if (strlen($key))
+			{
+				$cache->set('riverid_app_' . $key, 'nein', MEMCACHE_COMPRESSED, 0);
+			}
 
 			$Response->Send(401, RESP_ERR, array(
 				'error' => 'Call requires a registered API key.'
@@ -100,8 +103,9 @@ class Application {
 	// Delete an application from the registry.
 	public function Delete($id = null)
 	{
-		global $MySQL;
+		global $MySQL, $cache;
 		$ret = $MySQL->Push('DELETE FROM applications WHERE id=' . $MySQL->Clean($id) . ' LIMIT 1;');
+		$cache->delete('riverid_app_' . $this->Secret());
 		return $ret;
 	}
 
@@ -109,7 +113,7 @@ class Application {
 	{
 		if ( $update !== null )
 		{
-			global $MySQL;
+			global $MySQL, $cache;
 
 			if ( ! $filter )
 			{
@@ -121,6 +125,7 @@ class Application {
 			if ( $update !== null )
 			{
 				$ret = $MySQL->Push('UPDATE applications SET ' . $var . '="' . $update . '" WHERE id=' . $this->data['id'] . ' LIMIT 1;');
+				$cache->delete('riverid_app_' . $this->Secret());
 				if ( $ret )
 				{
 					$this->data[$var] = $update;

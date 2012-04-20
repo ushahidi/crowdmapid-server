@@ -27,8 +27,9 @@ require('./lib/class.mail.php');			// Email management.
 
 // Connect to our memcache server.
 $cache = new Memcache;
-@$cache->connect(CFG_MEMCACHED, 11211);
-if ( ! $cache) {
+@$cache->pconnect(CFG_MEMCACHED, 11211);
+if ($cache === FALSE)
+{
 	$Response->Send(503, RESP_ERR, array(
 		   'error' => 'Service is currently unavailable. (Memcache)'
 	));
