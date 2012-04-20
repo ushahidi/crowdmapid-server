@@ -64,10 +64,28 @@ else
 }
 
 // Use the request path as the method. (Preferred Method)
-if(!isset($request['method']) && isset($_SERVER['PATH_INFO'])) {
-	if($_SERVER['PATH_INFO'] != 'index.php' && $_SERVER['PATH_INFO'] != '/') {
-		define('API_METHOD', trim($_SERVER['PATH_INFO'], '/'));
-	}
+if(!isset($request['method']) && isset($_SERVER['REQUEST_URI']))
+{
+	$s = substr($_SERVER['REQUEST_URI'], 1);
+
+	if (substr($s, 0, 4) == 'api/')
+		$s = substr($s, 4);
+
+	if (strpos($s, '?'))
+		$s = substr($s, 0, strrpos($s, '?'));
+
+	if (substr($s, -1) != '/')
+		$s .= '/';
+
+	while(strrpos($s, '//'))
+		$s = str_replace('//', '/', $s);
+
+	$s = substr($s, 0, strrpos($s, '/'));
+
+	if($s)
+		define('API_METHOD', trim($s))
+
+	unset($s);
 }
 
 // Permit cross domain requests.
