@@ -16,16 +16,35 @@ class Application {
 
 	public function Set($key = '', $free = false)
 	{
-		global $MySQL, $Response;
+		global $MySQL, $Response, $cache;
 
 		if ( strlen($key) )
 		{
-			$this->data = $MySQL->Pull('SELECT * FROM applications WHERE secret="' . $MySQL->Clean($key) . '" LIMIT 1;');
+			$this->data = $cache->get('riverid_app_' . $key);
+
+			if ($this->data)
+			{
+				if ($this->data == 'nein')
+				{
+					$this->data = array();
+				}
+				else
+				{
+					$this->data = unserialize($this->data);
+				}
+			}
+			else
+			{
+				$this->data = $MySQL->Pull('SELECT * FROM applications WHERE secret="' . $MySQL->Clean($key) . '" LIMIT 1;');
+				$cache->set('riverid_app_' . $key, serialize($this->data), MEMCACHE_COMPRESSED, 0);
+			}
 		}
 
 		// Invalid API key, or no API key was provided.
 		if ( ! $this->data )
 		{
+			$cache->set('riverid_app_' . $key, 'nein', MEMCACHE_COMPRESSED, 0);
+
 			$Response->Send(401, RESP_ERR, array(
 				'error' => 'Call requires a registered API key.'
 			));
