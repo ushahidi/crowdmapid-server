@@ -30,13 +30,13 @@ class Application {
 				}
 				else
 				{
-					$this->data = unserialize($this->data);
+					$this->data = unserialize(base64_decode($this->data));
 				}
 			}
 			else
 			{
 				$this->data = $MySQL->Pull('SELECT * FROM applications WHERE secret="' . $MySQL->Clean($key) . '" LIMIT 1;');
-				$cache->set('riverid_app_' . $key, serialize($this->data), MEMCACHE_COMPRESSED, 0);
+				$cache->set('riverid_app_' . $key, base64_encode(serialize($this->data)), MEMCACHE_COMPRESSED, 30);
 			}
 		}
 
