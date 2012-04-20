@@ -83,7 +83,7 @@ if(!isset($request['method']) && isset($_SERVER['REQUEST_URI']))
 	$s = substr($s, 0, strrpos($s, '/'));
 
 	if($s)
-		define('API_METHOD', trim($s))
+		define('API_METHOD', trim($s));
 
 	unset($s);
 }
