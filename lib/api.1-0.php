@@ -88,7 +88,7 @@ elseif ( API_METHOD == 'usersites' )
 }
 elseif ( API_METHOD == 'changeemail' )
 {
-	api_expectations(array('oldemail', 'newemail', 'password', 'mailbody', 'subject'));
+	api_expectations(array('oldemail', 'newemail', 'password', 'mailbody'));
 
 	if ( $User->Set($request['oldemail']) )
 	{
@@ -125,6 +125,9 @@ elseif ( API_METHOD == 'changeemail' )
 				// Replace %token% in mailbody with the necessary authorization code.
 				$request['mailbody'] = trim(filter_var($request['mailbody'], FILTER_SANITIZE_STRING));
 				$request['mailbody'] = str_replace('%token%', $token, $request['mailbody']);
+
+				if(!isset($request['subject'])) $request['subject'] = 'Confirm Your ' . $Application->Name() . ' Email Address Change';
+				$request['subject'] = trim(filter_var($request['subject'], FILTER_SANITIZE_STRING));
 
 				// Notify user of the address change.
 				$Mailing->Send($from, $request['newemail'], $request['subject'], $request['mailbody']);
@@ -314,7 +317,7 @@ elseif ( API_METHOD == 'registered' )
 elseif ( API_METHOD == 'requestpassword' )
 {
 	// Reset Password, Part 1: Confirmation Email w/ Link.
-	api_expectations(array('email', 'mailbody', 'subject'));
+	api_expectations(array('email', 'mailbody'));
 
 	if ( $User->Set($request['email']) )
 	{
@@ -336,6 +339,9 @@ elseif ( API_METHOD == 'requestpassword' )
 		// Replace %token% in mailbody with the necessary authorization code.
 		$request['mailbody'] = trim(filter_var($request['mailbody'], FILTER_SANITIZE_STRING));
 		$request['mailbody'] = str_replace('%token%', $token, $request['mailbody']);
+
+		if(!isset($request['subject'])) $request['subject'] = 'Resetting Your ' . $Application->Name() . ' Password';
+		$request['subject'] = trim(filter_var($request['subject'], FILTER_SANITIZE_STRING));
 
 		// Notify user of the address change.
 		$Mailing->Send($from, $request['email'], $request['subject'], $request['mailbody']);
