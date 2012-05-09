@@ -25,6 +25,9 @@ define( 'CFG_SQL_DATABASE',  'riverid' );
 // How long an API hit should count against an app's cap.
 define('CFG_RATELIMIT_SEC',  3600 );
 
+// How long before an emailed token expires.
+define('CFG_TOKEN_EXPIRES',  172800 );
+
 // How long before a user session expires.
 define('CFG_USER_SESSION_EXPIRES',  86400 );
 
