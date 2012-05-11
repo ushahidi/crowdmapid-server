@@ -126,6 +126,7 @@ elseif ( API_METHOD == 'changeemail' )
 				$request['mailbody'] = trim(filter_var($request['mailbody'], FILTER_SANITIZE_STRING));
 				$request['mailbody'] = str_replace('%token%', $token, $request['mailbody']);
 
+				if(isset($request['mailsubject'])) $request['subject'] = $request['mailsubject'];
 				if(!isset($request['subject'])) $request['subject'] = 'Confirm Your ' . $Application->Name() . ' Email Address Change';
 				$request['subject'] = trim(filter_var($request['subject'], FILTER_SANITIZE_STRING));
 
@@ -340,6 +341,7 @@ elseif ( API_METHOD == 'requestpassword' )
 		$request['mailbody'] = trim(filter_var($request['mailbody'], FILTER_SANITIZE_STRING));
 		$request['mailbody'] = str_replace('%token%', $token, $request['mailbody']);
 
+		if(isset($request['mailsubject'])) $request['subject'] = $request['mailsubject'];
 		if(!isset($request['subject'])) $request['subject'] = 'Resetting Your ' . $Application->Name() . ' Password';
 		$request['subject'] = trim(filter_var($request['subject'], FILTER_SANITIZE_STRING));
 
