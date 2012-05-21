@@ -107,22 +107,22 @@ class Response {
 
 		$callback = null;
 		if(isset($request)) {
-			$resp['request'] = (object) $request;
-			if ( isset($resp['request']->api_secret) )
-			{
-				unset($resp['request']->api_secret);
+			if (isset($request['api_secret'])) unset($request['api_secret']);
+			if (isset($request['api_version'])) unset($request['api_version']);
+			if (isset($request['session_id'])) unset($request['session_id']);
+
+			if (isset($request['callback'])) {
+				$callback = $request['callback'];
+				unset($request['callback']);
 			}
 
-			if ( isset($resp['request']->callback) )
-			{
-				$callback = $resp['request']->callback;
-				unset($resp['request']->callback);
+			if (isset($request['password'])) {
+				$request['password'] = str_repeat('*', strlen($request['password']));
 			}
 
-			if ( isset($resp['request']->password) )
-			{
-				$resp['request']->password = str_repeat('*', strlen($resp['request']->password));
-			}
+			$request = array_filter($request);
+
+			if(count($request)) $resp['request'] = (object) $request;
 		}
 
 		$resp = array_merge($resp, $data);
@@ -132,9 +132,7 @@ class Response {
 		}
 
 		$resp = json_encode($resp);
-		if($callback) {
-			$resp = "{$callback}({$resp})";
-		}
+		if($callback) $resp = "{$callback}({$resp})";
 
 		header('Content-Length: ' . strlen($resp));
 

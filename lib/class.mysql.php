@@ -30,7 +30,7 @@ class MySQL
 		if ( !$result )
 		{
 			global $Response;
-			@file_put_contents('mysql_errors.txt', mysql_error() . "\n", FILE_APPEND);
+			@file_put_contents('mysql_errors.txt', "\n{$statement}\n->" . mysql_error() . "\n", FILE_APPEND);
 			$Response->Send(500, RESP_ERR, array(
 				   'error' => 'An invalid database query was passed. An administrator has been notified.'
 			));
@@ -57,7 +57,7 @@ class MySQL
 		if ( !$result )
 		{
 			global $Response;
-			@file_put_contents('mysql_errors.txt', mysql_error() . "\n", FILE_APPEND);
+			@file_put_contents('mysql_errors.txt', "\n{$statement}\n->" . mysql_error() . "\n", FILE_APPEND);
 			$Response->Send(500, RESP_ERR, array(
 				   'error' => 'An invalid database query was passed. An administrator has been notified.'
 			));

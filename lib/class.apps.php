@@ -217,6 +217,26 @@ class Application {
 		return $this->__Property('admin_identity', $update);
 	}
 
+/*
+	// Get or assign an internal note relating to the application. This should never, ever be exposed over the API.
+	public function apigeeUsername($update = null)
+	{
+		return $this->__Property('apigee_username', $update);
+	}
+
+	// Get or assign the contact's email address. This should go to a Real Human(tm) in charge of the development of the assigned application, as we may need to send notices to this address later if there are problems with their API reaching hit cap, etc.
+	public function apigeePassword($update = null)
+	{
+		return $this->__Property('apigee_password', $update, FILTER_SANITIZE_EMAIL);
+	}
+
+	// Get or assign the contact identity (individual's name, organization, etc.) in charge of the application.
+	public function apigeeApplicationID($update = null)
+	{
+		return $this->__Property('apigee_app_id', $update);
+	}
+*/
+
 	// Toggle API debugging for this app; exposes additional diagnostic data with API returns.
 	public function Debug($update = null)
 	{
@@ -244,6 +264,35 @@ class Application {
 			}
 		}
 		return $this->__Property('debug', $update, FILTER_SANITIZE_NUMBER_INT);
+	}
+
+	// Toggle administrative function access for this app?
+	public function adminAccess($update = null)
+	{
+		if ( $update )
+		{
+			if ( $update === TRUE )
+			{
+				$update = 1;
+			}
+			elseif( $update === FALSE )
+			{
+				$update = 0;
+			}
+			elseif ( !is_numeric($update) )
+			{
+				$update = null;
+			}
+			elseif( $update < 1 )
+			{
+				$update = 0;
+			}
+			elseif( $update > 1 )
+			{
+				$update = 1;
+			}
+		}
+		return $this->__Property('admin_access', $update, FILTER_SANITIZE_NUMBER_INT);
 	}
 
 	// Get the timestamp of when the application was registered.
