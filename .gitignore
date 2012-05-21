@@ -2,3 +2,5 @@
 .DS_Store
 
 config.php
+
+mysql_errors.txt
