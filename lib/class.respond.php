@@ -133,6 +133,9 @@ class Response {
 
 		$resp = json_encode($resp);
 		if($callback) $resp = "{$callback}({$resp})";
+		echo $resp;
+
+		$resp = ob_get_clean();
 
 		header('Content-Length: ' . strlen($resp));
 

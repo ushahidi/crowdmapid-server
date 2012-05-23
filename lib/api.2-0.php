@@ -1,19 +1,11 @@
-<?php
+<?php defined('LOADED_SAFELY') or die('You cannot access this file directly.');
 
-if(!defined('LOADED_SAFELY')) die('You cannot access this file directly.');
+$api_collection   = (isset($struct[0]) ? $struct[0] : '');
+$api_user         = (isset($struct[1]) ? $struct[1] : '');
+$api_action       = (isset($struct[2]) ? $struct[2] : '');
+$api_action_value = (isset($struct[3]) ? $struct[3] : '');
 
-$api_collection ='';
-$api_user = '';
-$api_action = '';
-$api_action_value = '';
-
-if(isset($struct[0])) $api_collection = $struct[0];
-if(isset($struct[1])) $api_user = $struct[1];
-if(isset($struct[2])) $api_action = $struct[2];
-if(isset($struct[3])) $api_action_value = $struct[3];
-
-
-if($api_collection = 'user') {
+if($api_collection == 'user') {
 
 	if($api_user) { // /user/:user_id
 
@@ -132,8 +124,7 @@ if($api_collection = 'user') {
 
 				if(HTTP_METHOD == 'POST' || HTTP_METHOD == 'PUT') {
 
-					if (strlen($request['password']) < 5 || strlen($request['password']) > 128)
-					{
+					if (strlen($request['password']) < 5 || strlen($request['password']) > 128) {
 						$Response->Send(200, RESP_ERR, array(
 							'error' => 'Please provide a password between 5 and 128 characters in length.'
 						));
@@ -222,11 +213,11 @@ if($api_collection = 'user') {
 						api_expectations(array('title','description','graphic','url','category'));
 
 						$User->Badge($Application->ID(), $api_action_value, array(
-							'title' => $request['title'],
+							'title'       => $request['title'],
 							'description' => $request['description'],
-							'graphic' => $request['graphic'],
-							'url' => $request['url'],
-							'category' => $request['category']
+							'graphic'     => $request['graphic'],
+							'url'         => $request['url'],
+							'category'    => $request['category']
 						));
 
 						$Response->Send(200, RESP_OK, array());
@@ -248,11 +239,11 @@ if($api_collection = 'user') {
 						api_expectations(array('badge','title','description','graphic','url','category'));
 
 						$User->Badge($Application->ID(), $request['badge'], array(
-							'title' => $request['title'],
+							'title'       => $request['title'],
 							'description' => $request['description'],
-							'graphic' => $request['graphic'],
-							'url' => $request['url'],
-							'category' => $request['category']
+							'graphic'     => $request['graphic'],
+							'url'         => $request['url'],
+							'category'    => $request['category']
 						));
 
 						$Response->Send(200, RESP_OK, array());
@@ -398,15 +389,15 @@ if($api_collection = 'user') {
 				// Get information about user.
 				$Response->Send(200, RESP_OK, array(
 					'user' => array(
-						'user_id' => $User->Hash(),
-						'session_id' => $User->Session($Application->ID()),
-						'registered' => $User->Registered(),
-						'password_last_changed' => $User->passwordChanged(),
+						'user_id'                     => $User->Hash(),
+						'session_id'                  => $User->Session($Application->ID()),
+						'registered'                  => $User->Registered(),
+						'password_last_changed'       => $User->passwordChanged(),
 						'password_challenge_question' => $User->Question(),
-						'avatar' => $avatar,
-						'emails' => $User->Emails(),
-						'badges' => $User->Badges($Application->ID(), true),
-						'storage' => $User->Storage($Application->ID())
+						'avatar'                      => $avatar,
+						'emails'                      => $User->Emails(),
+						'badges'                      => $User->Badges($Application->ID(), true),
+						'storage'                     => $User->Storage($Application->ID())
 					)
 				));
 
@@ -465,7 +456,7 @@ if($api_collection = 'user') {
 				$session = $User->Session($Application->ID());
 
 				$Response->Send(200, RESP_OK, array(
-					'user_id' => $resp['hash'],
+					'user_id'    => $resp['hash'],
 					'session_id' => $session
 				));
 			}

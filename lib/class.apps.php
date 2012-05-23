@@ -54,8 +54,8 @@ class Application {
 		}
 
 		// Determine the number of unexpired hits.
-		$this->hits = $MySQL->Pull("SELECT cache_value FROM cache WHERE cache_name='app_hits_count_{$this->data['id']}' LIMIT 1;");
-		$this->hits = $this->hits['cache_value'];
+		$this->hits = $MySQL->Pull("SELECT stat_value FROM statistics WHERE stat_name='app_hits_count_{$this->data['id']}' LIMIT 1;");
+		$this->hits = $this->hits['stat_value'];
 		header('X-RateLimit-Remaining: ' . ($this->data['ratelimit'] - $this->hits));
 
 		// Was this a free API call?

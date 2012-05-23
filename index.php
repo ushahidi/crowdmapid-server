@@ -1,5 +1,7 @@
 <?php
 
+ob_start();
+
 // Start benchmark timer.
 define('BENCHMARK', microtime(true));
 
@@ -11,12 +13,12 @@ define('API_VERSION', '1.1');
 
 // Just a string representation of success or failure. The "status" JSON response.
 define("RESP_ERR", false);
-define("RESP_OK", true);
+define("RESP_OK",   true);
 
 // Representations of the various request method types.
-define('HTTP_METHOD_GET', 1);
-define('HTTP_METHOD_POST', 2);
-define('HTTP_METHOD_PUT', 3);
+define('HTTP_METHOD_GET',    1);
+define('HTTP_METHOD_POST',   2);
+define('HTTP_METHOD_PUT',    3);
 define('HTTP_METHOD_DELETE', 4);
 
 // The request variable contains a breakdown of the incoming API call.
@@ -121,15 +123,15 @@ if(!isset($request['method']) && isset($_SERVER['REQUEST_URI']))
 		$s = substr($s, strlen($request['api_version']) + 2);
 	}
 
-	if($s)
-		$struct = trim($s);
-		if(strpos($struct, '/')) {
-			$struct = explode('/', $struct);
-			$s = $struct[0];
-		} else {
-			$struct = array($struct);
-		}
-		define('API_METHOD', $s);
+	if($s) $struct = trim($s);
+
+	if(is_string($struct) && strpos($struct, '/')) {
+		$struct = explode('/', $struct);
+		$s = $struct[0];
+	} else {
+		$struct = array($struct);
+	}
+	define('API_METHOD', $s);
 
 	unset($s);
 }
@@ -150,9 +152,9 @@ if ( defined('API_METHOD') )
 	{
 		// Provide some basic information about this installation.
 		$Response->Send(200, RESP_OK, array('response' => array(
-			'info_url'	=> CFG_URL,
-			'name'		=> CFG_NAME,
-			'version'	=> (string)API_VERSION
+			'info_url' => CFG_URL,
+			'name'     => CFG_NAME,
+			'version'  => (string)API_VERSION
 		)));
 	}
 	elseif ( API_METHOD == 'ping' )
@@ -167,9 +169,9 @@ if ( defined('API_METHOD') )
 		// Get an application's current hit cap and remaining hits. (This call does not count against an app's cap.)
 		@$Application->Set($request['api_secret'], true);
 		$Response->Send(200, RESP_OK, array('response' => array(
-			'limit'				=> (int)$Application->rateLimit(), // Current hit cap.
-			'remaining'			=> (int)$Application->rateRemaining(), // Hits remaining until cap.
-			'next_expiration'	=> (int)$Application->rateNextExpiration() // How many seconds until the oldest registered hit is set to expire.
+			'limit'           => (int)$Application->rateLimit(), // Current hit cap.
+			'remaining'       => (int)$Application->rateRemaining(), // Hits remaining until cap.
+			'next_expiration' => (int)$Application->rateNextExpiration() // How many seconds until the oldest registered hit is set to expire.
 		)));
 	}
 	else
