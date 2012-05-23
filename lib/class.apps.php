@@ -1,8 +1,13 @@
-<?php
+<?php defined('LOADED_SAFELY') or die('You cannot access this file directly.');
 
-if(!defined('LOADED_SAFELY')) die('You cannot access this file directly.');
-
-// API Access Control
+/**
+ * CrowdmapID Application Class
+ *
+ * @package    CrowdmapID
+ * @author     Ushahidi Team <team@ushahidi.com>
+ * @copyright  Ushahidi - http://www.ushahidi.com
+ * @license    http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL)
+ */
 
 class Application {
 
@@ -16,41 +21,35 @@ class Application {
 
 	public function Set($key = '', $free = false)
 	{
-		global $MySQL, $Response, $cache;
+		global $MySQL, $Response;
 
-		if ( strlen($key) )
-		{
-			$this->data = $cache->get('riverid_app_' . $key);
+		if (strlen($key)) {
 
-			if ($this->data)
-			{
-				if ($this->data == 'nein')
-				{
+			if($this->data = Cache::Get("app_{$key}")) {
+
+				if ($this->data == 'NONEXISTENT')
 					$this->data = array();
-				}
 				else
-				{
 					$this->data = unserialize(base64_decode($this->data));
-				}
-			}
-			else
-			{
+
+			} else {
+
 				$this->data = $MySQL->Pull('SELECT * FROM applications WHERE secret="' . $MySQL->Clean($key) . '" LIMIT 1;');
-				$cache->set('riverid_app_' . $key, base64_encode(serialize($this->data)), MEMCACHE_COMPRESSED, 30);
+				Cache::Set("app_{$key}", base64_encode(serialize($this->data)));
+
 			}
 		}
 
 		// Invalid API key, or no API key was provided.
-		if ( ! $this->data )
-		{
+		if ( ! $this->data) {
+
 			if (strlen($key))
-			{
-				$cache->set('riverid_app_' . $key, 'nein', MEMCACHE_COMPRESSED, 0);
-			}
+				Cache::Set("app_{$key}", 'NONEXISTENT', 10);
 
 			$Response->Send(401, RESP_ERR, array(
 				'error' => 'Call requires a registered API key.'
 			));
+
 		}
 
 		// Determine the number of unexpired hits.
@@ -59,13 +58,12 @@ class Application {
 		header('X-RateLimit-Remaining: ' . ($this->data['ratelimit'] - $this->hits));
 
 		// Was this a free API call?
-		if ( $free == false AND $this->data['ratelimit'] > 0)
-		{
+		if ($free == false AND $this->data['ratelimit'] > 0) {
+
 			header("X-RateLimit-Limit: {$this->data['ratelimit']}");
 
 			// Has the application exceeded it's API query limit for the day?
-			if ( $this->hits >= $this->data['ratelimit'] )
-			{
+			if ($this->hits >= $this->data['ratelimit']) {
 				$Response->Send(509, RESP_ERR, array(
 					'error' => 'Your application has made too many API calls recently. Please contact us to inquire about whitelisting.'
 				));
@@ -73,6 +71,7 @@ class Application {
 
 			// Record this request as a new hit.
 			$MySQL->Push('INSERT INTO application_hits (application,method,expires) VALUES ("' . $this->data['id'] . '", "' . API_METHOD . '", TIMESTAMPADD(SECOND, ' . CFG_RATELIMIT_SEC . ', NOW()));');
+
 		}
 	}
 
@@ -92,10 +91,8 @@ class Application {
 
 		$ret = $MySQL->Push('INSERT INTO applications (' . implode(',', array_keys($fields)) . ') VALUES ("' . implode('","', array_map('mysql_real_escape_string', array_values($fields))) . '");');
 
-		if ( $ret )
-		{
+		if ($ret)
 			return(array('secret' => $fields['secret'], 'insertid' => $ret));
-		}
 
 		return false;
 	}
@@ -103,38 +100,38 @@ class Application {
 	// Delete an application from the registry.
 	public function Delete($id = null)
 	{
-		global $MySQL, $cache;
+		global $MySQL;
+
 		$ret = $MySQL->Push('DELETE FROM applications WHERE id=' . $MySQL->Clean($id) . ' LIMIT 1;');
-		$cache->delete('riverid_app_' . $this->Secret());
+		Cache::Delete('app_' . $this->Secret());
+
 		return $ret;
 	}
 
 	private function __Property($var, $update = null, $filter = null)
 	{
-		if ( $update !== null )
-		{
-			global $MySQL, $cache;
+		if ($update !== null) {
 
-			if ( ! $filter )
-			{
+			global $MySQL;
+
+			if ( ! $filter)
 				$filter = FILTER_SANITIZE_STRING;
-			}
 
 			$update = $MySQL->Clean(trim(filter_var($update, $filter)));
 
-			if ( $update !== null )
-			{
+			if ($update !== null) {
 				$ret = $MySQL->Push('UPDATE applications SET ' . $var . '="' . $update . '" WHERE id=' . $this->data['id'] . ' LIMIT 1;');
-				$cache->delete('riverid_app_' . $this->Secret());
-				if ( $ret )
-				{
+
+				// Clear our cache of the application.
+				Cache::Delete('app_' . $this->Secret());
+
+				if ($ret) {
 					$this->data[$var] = $update;
 					return $this->data[$var];
 				}
 			}
-		}
-		else
-		{
+
+		} else {
 			return $this->data[$var];
 		}
 	}
@@ -217,95 +214,54 @@ class Application {
 		return $this->__Property('admin_identity', $update);
 	}
 
-/*
-	// Get or assign an internal note relating to the application. This should never, ever be exposed over the API.
-	public function apigeeUsername($update = null)
-	{
-		return $this->__Property('apigee_username', $update);
-	}
-
-	// Get or assign the contact's email address. This should go to a Real Human(tm) in charge of the development of the assigned application, as we may need to send notices to this address later if there are problems with their API reaching hit cap, etc.
-	public function apigeePassword($update = null)
-	{
-		return $this->__Property('apigee_password', $update, FILTER_SANITIZE_EMAIL);
-	}
-
-	// Get or assign the contact identity (individual's name, organization, etc.) in charge of the application.
-	public function apigeeApplicationID($update = null)
-	{
-		return $this->__Property('apigee_app_id', $update);
-	}
-*/
-
 	// Toggle API debugging for this app; exposes additional diagnostic data with API returns.
 	public function Debug($update = null)
 	{
-		if ( $update )
-		{
-			if ( $update === TRUE )
-			{
+		if ($update) {
+			if ($update === TRUE) {
 				$update = 1;
-			}
-			elseif( $update === FALSE )
-			{
+			} elseif ($update === FALSE) {
 				$update = 0;
-			}
-			elseif ( !is_numeric($update) )
-			{
+			} elseif ( ! is_numeric($update)) {
 				$update = null;
-			}
-			elseif( $update < 1 )
-			{
+			} elseif ($update < 1) {
 				$update = 0;
-			}
-			elseif( $update > 1 )
-			{
+			} elseif ($update > 1) {
 				$update = 1;
 			}
 		}
+
 		return $this->__Property('debug', $update, FILTER_SANITIZE_NUMBER_INT);
 	}
 
 	// Toggle administrative function access for this app?
 	public function adminAccess($update = null)
 	{
-		if ( $update )
-		{
-			if ( $update === TRUE )
-			{
+		if ($update) {
+			if ($update === TRUE) {
 				$update = 1;
-			}
-			elseif( $update === FALSE )
-			{
+			} elseif ($update === FALSE) {
 				$update = 0;
-			}
-			elseif ( !is_numeric($update) )
-			{
+			} elseif ( ! is_numeric($update)) {
 				$update = null;
-			}
-			elseif( $update < 1 )
-			{
+			} elseif ($update < 1) {
 				$update = 0;
-			}
-			elseif( $update > 1 )
-			{
+			} elseif ($update > 1) {
 				$update = 1;
 			}
 		}
+
 		return $this->__Property('admin_access', $update, FILTER_SANITIZE_NUMBER_INT);
 	}
 
 	// Get the timestamp of when the application was registered.
 	public function Registered($format = null)
 	{
-		$d = strtotime($this->data['registered']);
+		$date = strtotime($this->data['registered']);
 
-		if ( $format )
-		{
-			$d = date($format, $d);
-		}
+		if ($format) $date = date($format, $date);
 
-		return $d;
+		return $date;
 	}
 
 }

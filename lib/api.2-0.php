@@ -1,5 +1,14 @@
 <?php defined('LOADED_SAFELY') or die('You cannot access this file directly.');
 
+/**
+ * CrowdmapID API v2
+ *
+ * @package    CrowdmapID
+ * @author     Ushahidi Team <team@ushahidi.com>
+ * @copyright  Ushahidi - http://www.ushahidi.com
+ * @license    http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL)
+ */
+
 $api_collection   = (isset($struct[0]) ? $struct[0] : '');
 $api_user         = (isset($struct[1]) ? $struct[1] : '');
 $api_action       = (isset($struct[2]) ? $struct[2] : '');

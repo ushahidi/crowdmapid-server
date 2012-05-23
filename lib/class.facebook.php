@@ -24,7 +24,6 @@
 
 			global $User, $Application;
 			$User->Storage($Application->ID(), $session_var_name, $value);
-			//$_SESSION[$session_var_name] = $value;
 		}
 
 		protected function getPersistentData($key, $default = false) {
@@ -38,8 +37,6 @@
 			global $User, $Application;
 			$ret = $User->Storage($Application->ID(), $session_var_name);
 			return ($ret) ? $ret : $default;
-
-			//return isset($_SESSION[$session_var_name]) ? $_SESSION[$session_var_name] : $default;
 		}
 
 		protected function clearPersistentData($key) {
@@ -52,7 +49,6 @@
 
 			global $User, $Application;
 			$User->Storage($Application->ID(), $session_var_name, '');
-			//unset($_SESSION[$session_var_name]);
 		}
 
 		function clearAllPersistentData() {
@@ -67,21 +63,3 @@
 				$key));
 		}
 	}
-
-	/*
-	$Facebook = new Facebook(array(
-		'appId' => '335510229830429',
-		'secret' => '682bfd4cc1d206dcb7622ff5bd6f0b2e',
-		'fileUpload' => false
-	));
-
-	$Facebook->clearAllPersistentData();
-	$user = $Facebook->getUser();
-
-	if(!$user) {
- 		echo('Location: ' . $Facebook->getLoginUrl(array('scope' => 'email,publish_actions')));
-	}
-
-	echo "\n\n<hr />\n\n";
-	var_dump($_SESSION);
-	*/

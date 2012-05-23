@@ -398,15 +398,13 @@ class User
 
 	public function Cache($appid, $key, $value = null, $expires = 30)
 	{
-		global $cache;
-
 		$key = md5('user_cache_' . $this->data['id'] . '_' . $appid . '_' . $key);
 
 		if($value) {
-			$cache->set($key, $value, MEMCACHE_COMPRESSED, $expires);
+			Cache::Set($key, $value, $expires);
 			return true;
 		} else {
-			return $cache->get($key);
+			return Cache::Get($key);
 		}
 	}
 

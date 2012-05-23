@@ -25,29 +25,19 @@ define('HTTP_METHOD_DELETE', 4);
 $request = array();
 $struct = array();
 
-require('./config.php');					// Import configuration.
-require('./lib/class.respond.php');			// Response formatter.
-require('./lib/class.apps.php');			// API Access Control
-require('./lib/class.users.php');			// Users
-require('./lib/class.security.php');		// Security
-require('./lib/class.mysql.php');			// MySQL interaction.
-require('./lib/class.mail.php');			// Email management.
-//require('./lib/class.apigee.php');			// Apigee OAuth API, for Facebook and Twitter connectivity.
-//require('./lib/class.plugins.php');		// Load any available plugins.
+require('./config.php');            // Import configuration.
+require('./lib/class.respond.php'); // Response formatter.
+require('./lib/class.apps.php');    // API Access Control
+require('./lib/class.users.php');   // Users
+require('./lib/class.security.php');// Security
+require('./lib/class.mysql.php');   // MySQL interaction.
+require('./lib/class.mail.php');    // Email management.
+require('./lib/class.cache.php');   // Cache management.
+require('./lib/class.plugins.php'); // Plugins.
 
-require('./lib/class.facebook.php');		// Facebook OAuth API
+Plugins::raiseEvent("core.startup");
 
-// Connect to our memcache server.
-$cache = new Memcache;
-@$cache->pconnect(CFG_MEMCACHED, 11211);
-if ($cache === FALSE)
-{
-	$Response->Send(503, RESP_ERR, array(
-		   'error' => 'Service is currently unavailable. (Memcache)'
-	));
-}
-
-if ( $_SERVER['REQUEST_METHOD'] == 'GET' )
+if ($_SERVER['REQUEST_METHOD'] == 'GET')
 {
 	define('HTTP_METHOD', 'GET');
 	$request = $_GET;
@@ -57,7 +47,7 @@ if ( $_SERVER['REQUEST_METHOD'] == 'GET' )
 		unset($request['method']);
 	}
 }
-elseif ( $_SERVER['REQUEST_METHOD'] == 'POST' )
+elseif ($_SERVER['REQUEST_METHOD'] == 'POST')
 {
 	define('HTTP_METHOD', 'POST');
 	$request = $_POST;
@@ -67,7 +57,7 @@ elseif ( $_SERVER['REQUEST_METHOD'] == 'POST' )
 		unset($request['method']);
 	}
 }
-elseif ( $_SERVER['REQUEST_METHOD'] == 'PUT' )
+elseif ($_SERVER['REQUEST_METHOD'] == 'PUT')
 {
 	define('HTTP_METHOD', 'PUT');
 
@@ -79,7 +69,7 @@ elseif ( $_SERVER['REQUEST_METHOD'] == 'PUT' )
 		unset($request['method']);
 	}
 }
-elseif ( $_SERVER['REQUEST_METHOD'] == 'DELETE' )
+elseif ($_SERVER['REQUEST_METHOD'] == 'DELETE')
 {
 	define('HTTP_METHOD', 'DELETE');
 
@@ -93,14 +83,16 @@ elseif ( $_SERVER['REQUEST_METHOD'] == 'DELETE' )
 }
 else
 {
-	// Request method unsupported.
-	$Response->Send(501, RESP_ERR, array(
-		'error' => 'Unsupported request method used. GET and POST, PUT and DELETE are supported.'
-	));
+	if( ! Plugins::raiseEvent("core.breakdown_request_method")) {
+		// Request method unsupported.
+		$Response->Send(501, RESP_ERR, array(
+			'error' => 'Unsupported request method used. GET and POST, PUT and DELETE are supported.'
+		));
+	}
 }
 
 // Use the request path as the method. (Preferred Method)
-if(!isset($request['method']) && isset($_SERVER['REQUEST_URI']))
+if( ! isset($request['method']) && isset($_SERVER['REQUEST_URI']))
 {
 	$s = substr($_SERVER['REQUEST_URI'], 1);
 
@@ -123,6 +115,8 @@ if(!isset($request['method']) && isset($_SERVER['REQUEST_URI']))
 		$s = substr($s, strlen($request['api_version']) + 2);
 	}
 
+	Plugins::raiseEvent("core.breakdown_request_path", $s);
+
 	if($s) $struct = trim($s);
 
 	if(is_string($struct) && strpos($struct, '/')) {
@@ -136,43 +130,45 @@ if(!isset($request['method']) && isset($_SERVER['REQUEST_URI']))
 	unset($s);
 }
 
-// Permit cross domain requests.
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Authorization, X-Requested-With");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
-header("Access-Control-Expose-Headers: X-Frame-Options, X-RateLimit-Limit, X-RateLimit-Remaining");
-header("Access-Control-Allow-Credentials: true");
+Plugins::raiseEvent("core.preprocessing");
 
-// No soup for you, hackers.
-header("X-Frame-Options: deny");
-
-if ( defined('API_METHOD') )
+if (defined('API_METHOD'))
 {
-	if ( API_METHOD == 'about' )
+	if (API_METHOD == 'about')
 	{
-		// Provide some basic information about this installation.
-		$Response->Send(200, RESP_OK, array('response' => array(
+		$response = array(
 			'info_url' => CFG_URL,
 			'name'     => CFG_NAME,
 			'version'  => (string)API_VERSION
-		)));
+		);
+		Plugins::raiseEvent("method.public.about", $response);
+
+		// Provide some basic information about this installation.
+		$Response->Send(200, RESP_OK, array('response' => $response));
 	}
-	elseif ( API_METHOD == 'ping' )
+	elseif (API_METHOD == 'ping')
 	{
-		// Repor that we're OK.
+		$response = 'OK';
+		Plugins::raiseEvent("method.public.ping", $response);
+
+		// Report that we're OK.
 		$Response->Send(200, RESP_OK, array(
-			'response' => 'OK'
+			'response' => $response
 		));
 	}
-	elseif ( API_METHOD == 'limit' )
+	elseif (API_METHOD == 'limit')
 	{
 		// Get an application's current hit cap and remaining hits. (This call does not count against an app's cap.)
 		@$Application->Set($request['api_secret'], true);
-		$Response->Send(200, RESP_OK, array('response' => array(
+
+		$response = array(
 			'limit'           => (int)$Application->rateLimit(), // Current hit cap.
 			'remaining'       => (int)$Application->rateRemaining(), // Hits remaining until cap.
 			'next_expiration' => (int)$Application->rateNextExpiration() // How many seconds until the oldest registered hit is set to expire.
-		)));
+		);
+		Plugins::raiseEvent("method.private.limit", $response);
+
+		$Response->Send(200, RESP_OK, array('response' => $response));
 	}
 	else
 	{
@@ -190,15 +186,19 @@ if ( defined('API_METHOD') )
 	}
 }
 
-$Response->Send(400, RESP_ERR, array(
-	'error' => 'No supported API methods were invoked.'
-));
+if( ! Plugins::raiseEvent("method.no_matches")) {
+	$Response->Send(400, RESP_ERR, array(
+		'error' => 'No supported API methods were invoked.'
+	));
+}
 
 exit;
 
 function validateString($string, $validation = FILTER_VALIDATE_EMAIL)
 {
-	if ( filter_var($string, $validation) )
+	Plugins::raiseEvent("core.validatestring", array($string, $validation));
+
+	if (filter_var($string, $validation))
 	{
 		return true;
 	}
@@ -209,10 +209,11 @@ function validateString($string, $validation = FILTER_VALIDATE_EMAIL)
 function api_expectations($expected)
 {
 	global $request, $Response;
+	Plugins::raiseEvent("core.api_expectations", $expected);
 
 	foreach($expected as $e)
 	{
-		if ( !isset($request[$e]) )
+		if ( ! isset($request[$e]))
 		{
 			$Response->Send(400, RESP_ERR, array(
 				'error' => 'JSON parameter missing. Expected: ' . implode(',', $expected)
@@ -223,8 +224,10 @@ function api_expectations($expected)
 
 function array_keys_exist($array, $search)
 {
+	Plugins::raiseEvent("core.array_keys_exist", array($array, $search));
+
 	foreach($search as $s) {
-		if(!isset($array[$s])) {
+		if( ! isset($array[$s])) {
 			return false;
 		}
 	}

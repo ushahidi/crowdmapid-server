@@ -98,6 +98,16 @@ class Response {
 		header("HTTP/1.1 {$code} {$status}");
 		header('Content-Type: text/javascript');
 
+		header("Access-Control-Allow-Origin: *");
+		header("Access-Control-Allow-Headers: Authorization, X-Requested-With");
+		header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
+		header("Access-Control-Expose-Headers: X-Frame-Options, X-RateLimit-Limit, X-RateLimit-Remaining");
+		header("Access-Control-Allow-Credentials: true");
+
+		header("X-Frame-Options: deny");
+
+		Plugins::raiseEvent("core.response_http_headers");
+
 		$resp = array();
 		$resp['success'] = (bool)$success;
 
@@ -136,12 +146,14 @@ class Response {
 		echo $resp;
 
 		$resp = ob_get_clean();
-
 		header('Content-Length: ' . strlen($resp));
-
 		echo $resp;
 
-		exit();
+		ob_start();
+		Plugins::raiseEvent("core.shutdown");
+		ob_get_clean();
+
+		exit;
 	}
 
 }
