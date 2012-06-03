@@ -19,9 +19,11 @@ if($api_collection == 'user') {
 	if($api_user) { // /user/:user_id
 
 		if(!$User->Set($api_user)) {
-			$Response->Send(404, RESP_ERR, array(
+
+			Response::Send(404, RESP_ERR, array(
 				'error' => 'That user does not exist.'
 			));
+
 		}
 
 		if($api_action) { // /user/:user_id/:action
@@ -32,28 +34,24 @@ if($api_collection == 'user') {
 
 					if(HTTP_METHOD == 'GET') {
 
-						if($User->Set($api_user)) {
-							$emails = $User->Emails();
-							foreach($emails as $email) {
-								if($email['email'] == $api_action_value) {
-									$Response->Send(200, RESP_OK, array());
-									break;
-								}
-							}
+						$emails = $User->Emails();
 
-							$Response->Send(404, RESP_ERR, array(
-								'error' => 'That email address is not registered or does not belong to this user.'
-							));
-						} else {
-							$Response->Send(404, RESP_ERR, array(
-								'error' => 'That user does not exist.'
-							));
+						foreach($emails as $email) {
+							if($email['email'] == $api_action_value) {
+								Response::Send(200, RESP_OK, array());
+								break;
+							}
 						}
+
+						Response::Send(404, RESP_ERR, array(
+							'error' => 'That email address is not registered or does not belong to this user.'
+						));
 
 					} elseif(HTTP_METHOD == 'PUT') {
 
 						// Make the specified address the new master address for the account.
 						if($User->Set($api_user)) {
+
 							$resp = true;
 
 							if(isset($request['primary'])) {
@@ -65,30 +63,42 @@ if($api_collection == 'user') {
 							}
 
 							if($resp === TRUE) {
-								$Response->Send(200, RESP_OK, array());
+
+								Response::Send(200, RESP_OK, array());
+
 							} else {
-								$Response->Send(404, RESP_ERR, array('error' => $resp));
+
+								Response::Send(404, RESP_ERR, array('error' => $resp));
+
 							}
+
 						} else {
-							$Response->Send(404, RESP_ERR, array(
+
+							Response::Send(404, RESP_ERR, array(
 								'error' => 'That user does not exist.'
 							));
+
 						}
 
 					} elseif(HTTP_METHOD == 'DELETE') {
 
 						// Delete the specified email address from the account.
 						if($User->Set($api_user)) {
+
 							$resp = $User->emailRemove($api_action_value);
+
 							if($resp === TRUE) {
-								$Response->Send(200, RESP_OK, array());
+								Response::Send(200, RESP_OK, array());
 							} else {
-								$Response->Send(404, RESP_ERR, array('error' => $resp));
+								Response::Send(404, RESP_ERR, array('error' => $resp));
 							}
+
 						} else {
-							$Response->Send(404, RESP_ERR, array(
+
+							Response::Send(404, RESP_ERR, array(
 								'error' => 'That user does not exist.'
 							));
+
 						}
 
 					}
@@ -99,13 +109,17 @@ if($api_collection == 'user') {
 
 						// Get a list of email addresses associated with the account.
 						if($User->Set($api_user)) {
-							$Response->Send(200, RESP_OK, array(
+
+							Response::Send(200, RESP_OK, array(
 								'emails' => $User->Emails()
 							));
+
 						} else {
-							$Response->Send(404, RESP_ERR, array(
+
+							Response::Send(404, RESP_ERR, array(
 								'error' => 'That user does not exist.'
 							));
+
 						}
 
 					} elseif(HTTP_METHOD == 'POST') {
@@ -116,12 +130,14 @@ if($api_collection == 'user') {
 						$primary = (isset($request['primary']) ? true : false);
 
 						if($User->Set($api_user) && filter_var($request['email'], FILTER_VALIDATE_EMAIL)) {
+
 							if($User->emailAdd($request['email'], $primary, $confirmed)) {
-								$Response->Send(200, RESP_OK, array());
+								Response::Send(200, RESP_OK, array());
 							}
+
 						}
 
-						$Response->Send(400, RESP_ERR, array(
+						Response::Send(400, RESP_ERR, array(
 							'error' => 'This email address is already registered to another account.'
 						));
 
@@ -131,74 +147,103 @@ if($api_collection == 'user') {
 
 			} elseif($api_action == 'password') { // /user/:user_id/password
 
-				if(HTTP_METHOD == 'POST' || HTTP_METHOD == 'PUT') {
+				api_expectations(array('password'));
+
+				if(HTTP_METHOD == 'GET') {
+
+					if($User->Password() == $Security->Hash($request['password'], 128)) {
+						Response::Send(200, RESP_OK, array());
+					} else {
+						Response::Send(500, RESP_ERR, array(
+							'error' => 'Incorrect password.'
+						));
+					}
+
+				} elseif(HTTP_METHOD == 'POST' || HTTP_METHOD == 'PUT') {
 
 					if (strlen($request['password']) < 5 || strlen($request['password']) > 128) {
-						$Response->Send(200, RESP_ERR, array(
+						Response::Send(200, RESP_ERR, array(
 							'error' => 'Please provide a password between 5 and 128 characters in length.'
 						));
 					}
 
 					if($User->Password($request['password'])) {
-						$Response->Send(200, RESP_OK, array());
+						Response::Send(200, RESP_OK, array());
 					}
 
-					$Response->Send(500, RESP_ERR, array(
+					Response::Send(500, RESP_ERR, array(
 						'error' => 'Password change failed.'
 					));
+
 				}
 
 			} elseif($api_action == 'avatar') { // /user/:user_id/avatar
 
 				if(HTTP_METHOD == 'GET') {
+
 					$avatar = $User->Avatar();
 					if(!$avatar) $avatar = 'http://www.gravatar.com/avatar/' . md5(strtolower(trim($User->Email())));
 
-					$Response->Send(200, RESP_OK, array(
+					Response::Send(200, RESP_OK, array(
 						'avatar' => $avatar
 					));
+
 				} elseif(HTTP_METHOD == 'POST' || HTTP_METHOD == 'PUT') {
+
+					api_expectations(array('avatar'));
+
 					$User->Avatar($request['avatar']);
-					$Response->Send(200, RESP_OK, array());
+					Response::Send(200, RESP_OK, array());
+
 				}
 
 			} elseif($api_action == 'sessions') { // /user/:user_id/session
 
 				if(HTTP_METHOD == 'GET') {
-					if($api_action_value && strlen($api_action_value) == 64) { // /user/:user_id/session/:session_id
+
+					if($api_action_value) { // /user/:user_id/session/:session_id
 
 						// Session valid, return OK.
-						if($User->Sessions($Application->ID(), $api_action_value)) {
-							$Response->Send(200, RESP_OK, array());
+						if(strlen($api_action_value) == 64 && $User->Sessions($Application->ID(), $api_action_value)) {
+							Response::Send(200, RESP_OK);
 						}
 
 						// Session invalid; return 404.
-						$Response->Send(404, RESP_ERR, array());
+						Response::Send(404, RESP_ERR);
 
 					} else {
 
 						// Return current session hash.
-						$Response->Send(200, RESP_OK, array(
+						Response::Send(200, RESP_OK, array(
 							'session' => $User->Session($Application->ID())
 						));
 
 					}
 
 				} elseif(HTTP_METHOD == 'POST') {
+
 					// Sending a POST to /session will generate a new app session hash.
 					$session = $User->Sessions($Application->ID(), $api_action_value);
+
 					if($User->sessionDelete($Application->ID(), $session[0]['id'])) {
-						$Response->Send(200, RESP_OK, array(
+
+						Response::Send(200, RESP_OK, array(
 							'session' => $User->Session($Application->ID())
 						));
+
 					}
+
 				} elseif(HTTP_METHOD == 'PUT') {
+
 					// Refresh/extend the expiration date on a session.
 					if($session = $User->Session($Application->ID(), TRUE)) {
-						$Response->Send(200, RESP_OK, array(
+
+						Response::Send(200, RESP_OK, array(
 							'session' => $session
 						));
+
 					}
+
 				}
 
 			} elseif($api_action == 'badges') { // /user/:user_id/badge
@@ -207,13 +252,13 @@ if($api_collection == 'user') {
 
 					if(HTTP_METHOD == 'GET') {
 
-						$Response->Send(200, RESP_OK, array(
+						Response::Send(200, RESP_OK, array(
 							'badge' => $User->Badge($Application->ID(), $api_action_value)
 						));
 
 					} elseif(HTTP_METHOD == 'DELETE') {
 
-						$Response->Send(200, RESP_OK, array(
+						Response::Send(200, RESP_OK, array(
 							'badge' => $User->Badge($Application->ID(), $api_action_value, 'DELETE')
 						));
 
@@ -229,7 +274,7 @@ if($api_collection == 'user') {
 							'category'    => $request['category']
 						));
 
-						$Response->Send(200, RESP_OK, array());
+						Response::Send(200, RESP_OK, array());
 
 					}
 
@@ -239,7 +284,7 @@ if($api_collection == 'user') {
 
 						$returnAll = (isset($request['all']) ? true : false);
 
-						$Response->Send(200, RESP_OK, array(
+						Response::Send(200, RESP_OK, array(
 							'badges' => $User->Badges($Application->ID(), $returnAll)
 						));
 
@@ -255,7 +300,7 @@ if($api_collection == 'user') {
 							'category'    => $request['category']
 						));
 
-						$Response->Send(200, RESP_OK, array());
+						Response::Send(200, RESP_OK, array());
 
 					}
 
@@ -267,7 +312,7 @@ if($api_collection == 'user') {
 
 					if(HTTP_METHOD == 'GET') {
 
-						$Response->Send(200, RESP_OK, array(
+						Response::Send(200, RESP_OK, array(
 							'response' => (string)$User->Storage($Application->ID(), $api_action_value)
 						));
 
@@ -276,9 +321,9 @@ if($api_collection == 'user') {
 						api_expectations(array('value'));
 
 						if($User->Storage($Application->ID(), $api_action_value, $request['value'])) {
-							$Response->Send(200, RESP_OK, array());
+							Response::Send(200, RESP_OK, array());
 						} else {
-							$Response->Send(500, RESP_ERR, array(
+							Response::Send(500, RESP_ERR, array(
 								'error' => 'There was a problem storing your data.'
 							));
 						}
@@ -286,7 +331,7 @@ if($api_collection == 'user') {
 					} elseif(HTTP_METHOD == 'DELETE') {
 
 						$User->Storage($Application->ID(), $api_action_value, false);
-						$Response->Send(200, RESP_OK, array());
+						Response::Send(200, RESP_OK, array());
 
 					}
 
@@ -294,31 +339,19 @@ if($api_collection == 'user') {
 
 			} elseif($api_action == 'security') { // /user/:user_id/security
 
-				// TODO: Support two factor authentication through YubiKey and Google
+				Plugins::raiseEvent("method.security", $struct);
 
-				if($api_action_value == 'yubikey') { // /user/:user_id/security/yubikey
-
-				} elseif($api_action_value == 'google') { // /user/:user_id/security/google
-
-				}
+				Response::Send(404, RESP_ERR, array(
+					'error' => 'You did not target a supported security module.'
+				));
 
 			} elseif($api_action == 'social') { // /user/:user_id/social
 
-				if($api_action_value == 'facebook') { // /user/:user_id/social/facebook
+				Plugins::raiseEvent("method.social", $struct);
 
-				} elseif($api_action_value == 'twitter') { // /user/:user_id/social/twitter
-
-				} elseif($api_action_value == 'instagram') { // /user/:user_id/social/instagram
-
-				} elseif($api_action_value == 'foursquare') { // /user/:user_id/social/foursquare
-
-				} else {
-
-					$Response->Send(404, RESP_ERR, array(
-						'error' => 'You did not target a valid social network. Valid networks include Facebook, Twitter, Instagram and Foursquare.'
-					));
-
-				}
+				Response::Send(404, RESP_ERR, array(
+					'error' => 'You did not target a supported social network.'
+				));
 
 			} elseif($api_action == 'challenge') { // /user/:user_id/challenge
 
@@ -327,7 +360,7 @@ if($api_collection == 'user') {
 					if(HTTP_METHOD == 'GET') {
 
 						// Return the question.
-						$Response->Send(200, RESP_OK, array(
+						Response::Send(200, RESP_OK, array(
 							'question' => $User->Question()
 						));
 
@@ -339,16 +372,16 @@ if($api_collection == 'user') {
 
 							// Set the question.
 							if($User->Question($request['question'])) {
-								$Response->Send(200, RESP_OK, array());
+								Response::Send(200, RESP_OK, array());
 							}
 
-							$Response->Send(500, RESP_ERR, array(
+							Response::Send(500, RESP_ERR, array(
 								'error' => 'There was a problem setting your challenge question.'
 							));
 
 						} else {
 
-							$Response->Send(500, RESP_ERR, array(
+							Response::Send(500, RESP_ERR, array(
 								'error' => 'You must provide a challenge question.'
 							));
 
@@ -364,7 +397,7 @@ if($api_collection == 'user') {
 
 						$request['answer'] = $Security->Hash(trim(strtolower($request['answer'])), 128);
 						$User->Answer($request['answer']);
-						$Response->Send(200, RESP_OK, array());
+						Response::Send(200, RESP_OK, array());
 
 					}
 
@@ -376,11 +409,11 @@ if($api_collection == 'user') {
 					// Compare the 128bit hash of the existing answer and the incoming attempt.
 					if($User->Answer() == $request['answer']) {
 						// Success!
-						$Response->Send(200, RESP_OK, array());
+						Response::Send(200, RESP_OK, array());
 					}
 
 					// Failure.
-					$Response->Send(404, RESP_ERR, array(
+					Response::Send(404, RESP_ERR, array(
 						'error' => 'Answer is incorrect.'
 					));
 
@@ -396,7 +429,7 @@ if($api_collection == 'user') {
 				if(!$avatar) $avatar = 'http://www.gravatar.com/avatar/' . md5(strtolower(trim($User->Email())));
 
 				// Get information about user.
-				$Response->Send(200, RESP_OK, array(
+				Response::Send(200, RESP_OK, array(
 					'user' => array(
 						'user_id'                     => $User->Hash(),
 						'session_id'                  => $User->Session($Application->ID()),
@@ -413,11 +446,19 @@ if($api_collection == 'user') {
 			} elseif(HTTP_METHOD == 'DELETE') {
 
 				if($Application->adminAccess()) {
-					// Delete the user.
+
+					$User->Delete();
+
+					Response::Send(200, RESP_OK, array(
+						'response' => true
+					));
+
 				} else {
-					$Response->Send(403, RESP_ERR, array(
+
+					Response::Send(403, RESP_ERR, array(
 						'error' => 'This application is not permitted to access this resource.'
 					));
+
 				}
 
 			}
@@ -429,48 +470,71 @@ if($api_collection == 'user') {
 		if(HTTP_METHOD == 'GET') {
 
 			if($Application->adminAccess()) {
+
 				// Get a list of users.
-				$Response->Send(200, RESP_OK, array(
+				Response::Send(200, RESP_OK, array(
 					'users' => listUsers()
 				));
+
 			} else {
-				$Response->Send(403, RESP_ERR, array(
+
+				Response::Send(403, RESP_ERR, array(
 					'error' => 'This application is not permitted to access this resource.'
 				));
+
 			}
 
 		} elseif(HTTP_METHOD == 'POST') {
 
 			api_expectations(array('email', 'password'));
 
-			if (strlen($request['password']) < 5 || strlen($request['password']) > 128)
-			{
-				$Response->Send(200, RESP_ERR, array(
+			if (strlen($request['password']) < 5 || strlen($request['password']) > 128) {
+
+				Response::Send(200, RESP_ERR, array(
 					'error' => 'Please provide a password between 5 and 128 characters in length.'
 				));
+
 			}
 
-			if ($User->Set($request['email']))
-			{
-				$Response->Send(200, RESP_ERR, array(
+			if ($User->Set($request['email'])) {
+
+				Response::Send(200, RESP_ERR, array(
 					'error' => 'The given email address has already been registered.'
 				));
+
 			}
 
-			$resp = $User->Create($request['email'], $request['password']);
+			if (isset($request['hash'])) {
 
-			if ($resp)
-			{
+				if ($User->Set($request['hash'])) {
+
+					Response::Send(200, RESP_ERR, array(
+						'error' => 'A user with that hash already exists.'
+					));
+
+				}
+
+			} else {
+
+				$request['hash'] = '';
+
+			}
+
+			$resp = $User->Create($request['email'], $request['password'], '', '', $request['hash']);
+
+			if ($resp) {
+
 				$User->Set($request['email']);
 				$session = $User->Session($Application->ID());
 
-				$Response->Send(200, RESP_OK, array(
+				Response::Send(200, RESP_OK, array(
 					'user_id'    => $resp['hash'],
 					'session_id' => $session
 				));
+
 			}
 
-			$Response->Send(200, RESP_ERR, array(
+			Response::Send(200, RESP_ERR, array(
 				'error' => 'We encountered a problem while attempting to register your address. Please try again shortly.'
 			));
 

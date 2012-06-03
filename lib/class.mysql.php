@@ -10,15 +10,15 @@ class MySQL
 	public function __construct()
 	{
 		$this->link = @mysql_connect(CFG_SQL_HOST, CFG_SQL_USER, CFG_SQL_PASSWORD);
-		if ( $this->link )
+
+		if ($this->link)
 		{
 			$db = @mysql_select_db(CFG_SQL_DATABASE, $this->link);
 		}
 
-		if ( !$this->link || !$db )
+		if ( ! $this->link || !$db)
 		{
-			global $Response;
-			$Response->Send(503, RESP_ERR, array(
+			Response::Send(503, RESP_ERR, array(
 				   'error' => 'Database is currently unavailable.'
 			));
 		}
@@ -29,21 +29,20 @@ class MySQL
 		$result = @mysql_query($statement, $this->link);
 		if ( !$result )
 		{
-			global $Response;
 			@file_put_contents('mysql_errors.txt', "\n{$statement}\n->" . mysql_error() . "\n", FILE_APPEND);
-			$Response->Send(500, RESP_ERR, array(
+			Response::Send(500, RESP_ERR, array(
 				   'error' => 'An invalid database query was passed. An administrator has been notified.'
 			));
 		}
 
 		$return_results = array();
-		if ( mysql_num_rows($result) ) {
-			while ( $row = @mysql_fetch_assoc($result) ) {
+		if (@mysql_num_rows($result)) {
+			while ($row = @mysql_fetch_assoc($result)) {
 				$return_results[] = $row;
 			}
 		}
 
-		if(substr($statement, -8) == 'LIMIT 1;' && count($return_results) == 1) {
+		if (substr($statement, -8) == 'LIMIT 1;' && count($return_results) == 1) {
 			$return_results = $return_results[0];
 		}
 
@@ -56,9 +55,8 @@ class MySQL
 		$result = @mysql_unbuffered_query($statement, $this->link);
 		if ( !$result )
 		{
-			global $Response;
 			@file_put_contents('mysql_errors.txt', "\n{$statement}\n->" . mysql_error() . "\n", FILE_APPEND);
-			$Response->Send(500, RESP_ERR, array(
+			Response::Send(500, RESP_ERR, array(
 				   'error' => 'An invalid database query was passed. An administrator has been notified.'
 			));
 		}

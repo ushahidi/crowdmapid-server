@@ -21,7 +21,7 @@ class Application {
 
 	public function Set($key = '', $free = false)
 	{
-		global $MySQL, $Response;
+		global $MySQL;
 
 		if (strlen($key)) {
 
@@ -46,33 +46,42 @@ class Application {
 			if (strlen($key))
 				Cache::Set("app_{$key}", 'NONEXISTENT', 10);
 
-			$Response->Send(401, RESP_ERR, array(
+			Response::Send(401, RESP_ERR, array(
 				'error' => 'Call requires a registered API key.'
 			));
 
 		}
 
-		// Determine the number of unexpired hits.
-		$this->hits = $MySQL->Pull("SELECT stat_value FROM statistics WHERE stat_name='app_hits_count_{$this->data['id']}' LIMIT 1;");
-		$this->hits = $this->hits['stat_value'];
-		header('X-RateLimit-Remaining: ' . ($this->data['ratelimit'] - $this->hits));
+		header("X-RateLimit-Limit: {$this->data['ratelimit']}");
+		if ($this->data['ratelimit'] > 0) {
 
-		// Was this a free API call?
-		if ($free == false AND $this->data['ratelimit'] > 0) {
+			// Determine the number of unexpired hits.
+			$this->hits = $MySQL->Pull("SELECT stat_value FROM statistics WHERE stat_name='app_hits_count_{$this->data['id']}' LIMIT 1;");
+			$this->hits = $this->hits['stat_value'];
+			header('X-RateLimit-Remaining: ' . ($this->data['ratelimit'] - $this->hits));
 
-			header("X-RateLimit-Limit: {$this->data['ratelimit']}");
+			// Was this a free API call?
+			if ($free == false) {
 
-			// Has the application exceeded it's API query limit for the day?
-			if ($this->hits >= $this->data['ratelimit']) {
-				$Response->Send(509, RESP_ERR, array(
-					'error' => 'Your application has made too many API calls recently. Please contact us to inquire about whitelisting.'
-				));
+				// Has the application exceeded it's API query limit for the day?
+				if ($this->hits >= $this->data['ratelimit']) {
+					Response::Send(509, RESP_ERR, array(
+						'error' => 'Your application has made too many API calls recently. Please contact us to inquire about whitelisting.'
+					));
+				}
+
+				// Record this request as a new hit.
+				$MySQL->Push('INSERT INTO application_hits (application,expires) VALUES ("' . $this->data['id'] . '", TIMESTAMPADD(SECOND, ' . CFG_RATELIMIT_SEC . ', NOW()));');
+
 			}
 
-			// Record this request as a new hit.
-			$MySQL->Push('INSERT INTO application_hits (application,method,expires) VALUES ("' . $this->data['id'] . '", "' . API_METHOD . '", TIMESTAMPADD(SECOND, ' . CFG_RATELIMIT_SEC . ', NOW()));');
+		} else {
+
+			$this->hits = 0;
+			header('X-RateLimit-Remaining: 5000');
 
 		}
+
 	}
 
 	// Register a new application with the system. Pass it (at least) the name and user-facing address of the app. If successful returns an array with the secret and row id of the new application. If unsuccessful returns false.

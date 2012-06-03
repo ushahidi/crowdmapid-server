@@ -20,8 +20,7 @@ class Cache {
 		Cache::$connection->pconnect(CFG_MEMCACHED, 11211);
 
 		if (Cache::$connection === FALSE) {
-			global $Response;
-			$Response->Send(503, RESP_ERR, array(
+			Response::Send(503, RESP_ERR, array(
 				   'error' => 'Service is currently unavailable. (Memcache)'
 			));
 		}

@@ -22,17 +22,16 @@ class User
 		elseif ( strlen($id) === 64 )
 		{
 			// Passing a session hash.
-			$r = $MySQL->Pull("SELECT user FROM user_sessions WHERE hash='{$_id}' LIMIT 1;");
-			if ( $r )
-			{
+			if ($r = $MySQL->Pull("SELECT user FROM user_sessions WHERE hash='{$_id}' LIMIT 1;")) {
 				$r = $MySQL->Pull("SELECT * FROM users WHERE id='{$r['user']}' LIMIT 1;");
 			}
 		}
 		elseif ( strpos($id, '@') !== FALSE && strpos($id, '.') !== FALSE && filter_var($id, FILTER_VALIDATE_EMAIL) )
 		{
 			// Passing an email address.
-			$user = $MySQL->Pull("SELECT user FROM user_addresses WHERE email='{$_id}' LIMIT 1;");
-			if($user) $r = $MySQL->Pull("SELECT * FROM users WHERE id='{$user['user']}' LIMIT 1;");
+			if ($r = $MySQL->Pull("SELECT user FROM user_addresses WHERE email='{$_id}' LIMIT 1;")) {
+				$r = $MySQL->Pull("SELECT * FROM users WHERE id='{$r['user']}' LIMIT 1;");
+			}
 		}
 		elseif ( is_numeric($id) )
 		{
@@ -40,7 +39,7 @@ class User
 			$r = $MySQL->Pull("SELECT * FROM users WHERE id={$_id} LIMIT 1;");
 		}
 
-		if ( $r )
+		if ( $r && isset($r['id']) )
 		{
 			$this->data = $r;
 			return true;
@@ -49,19 +48,17 @@ class User
 		return false;
 	}
 
-	public function Create($email, $password, $question = '', $answer = '')
+	public function Create($email, $password, $question = '', $answer = '', $hash = '')
 	{
 		global $MySQL, $Security;
 
-		if ( $answer )
-		{
-			$answer = $Security->Hash($answer, 128);
-		}
+		$answer =   (strlen($answer) ?          $Security->Hash($answer, 128) : '');
+		$password = (strlen($password) == 128 ? $password : $Security->Hash($password, 128));
+		$hash =     (strlen($hash) == 128 ?     $hash : $Security->randHash(128));
 
 		$fields = array(
-			'hash' => $Security->randHash(128),
-			//'email' => $email,
-			'password' => $Security->Hash($password, 64),
+			'hash' => $hash,
+			'password' => $password,
 			'question' => $question,
 			'answer' => $answer
 		);
@@ -327,7 +324,7 @@ class User
 	{
 		if($update) {
 			global $Security;
-			$update = $Security->Hash($update, 64);
+			$update = $Security->Hash($update, 128);
 			$this->passwordChanged(true);
 		}
 
@@ -370,7 +367,7 @@ class User
 	public function Badge($appid, $badge, $update = null)
 	{
 		global $MySQL;
-		$badge = strtoupper($badge);
+		$badge = strtolower($badge);
 
 		if(is_array($update) && isset($update['title']) && isset($update['description']) && isset($update['graphic']) && isset($update['url']) && isset($update['category'])) {
 			if($resp = $this->Badge($appid, $badge)) {

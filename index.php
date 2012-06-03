@@ -25,15 +25,15 @@ define('HTTP_METHOD_DELETE', 4);
 $request = array();
 $struct = array();
 
-require('./config.php');            // Import configuration.
-require('./lib/class.respond.php'); // Response formatter.
-require('./lib/class.apps.php');    // API Access Control
-require('./lib/class.users.php');   // Users
-require('./lib/class.security.php');// Security
-require('./lib/class.mysql.php');   // MySQL interaction.
-require('./lib/class.mail.php');    // Email management.
-require('./lib/class.cache.php');   // Cache management.
-require('./lib/class.plugins.php'); // Plugins.
+require('./config.php');             // Import configuration.
+require('./lib/class.respond.php');  // Response formatter.
+require('./lib/class.apps.php');     // API Access Control
+require('./lib/class.users.php');    // Users
+require('./lib/class.security.php'); // Security
+require('./lib/class.mysql.php');    // MySQL interaction.
+require('./lib/class.mail.php');     // Email management.
+require('./lib/class.cache.php');    // Cache management.
+require('./lib/class.plugins.php');  // Plugins.
 
 Plugins::raiseEvent("core.startup");
 
@@ -63,6 +63,7 @@ elseif ($_SERVER['REQUEST_METHOD'] == 'PUT')
 
 	// WARNING: DELETE and PUT requests must be x-www-form-urlencoded!
 	parse_str(file_get_contents("php://input"), $request);
+	$request = array_merge($_GET, $_POST, $request);
 
 	if(isset($request['method'])) {
 		define('API_METHOD', $request['method']);
@@ -75,6 +76,7 @@ elseif ($_SERVER['REQUEST_METHOD'] == 'DELETE')
 
 	// WARNING: DELETE and PUT requests must be x-www-form-urlencoded!
 	parse_str(file_get_contents("php://input"), $request);
+	$request = array_merge($_GET, $_POST, $request);
 
 	if(isset($request['method'])) {
 		define('API_METHOD', $request['method']);
@@ -85,7 +87,7 @@ else
 {
 	if( ! Plugins::raiseEvent("core.breakdown_request_method")) {
 		// Request method unsupported.
-		$Response->Send(501, RESP_ERR, array(
+		Response::Send(501, RESP_ERR, array(
 			'error' => 'Unsupported request method used. GET and POST, PUT and DELETE are supported.'
 		));
 	}
@@ -117,14 +119,15 @@ if( ! isset($request['method']) && isset($_SERVER['REQUEST_URI']))
 
 	Plugins::raiseEvent("core.breakdown_request_path", $s);
 
-	if($s) $struct = trim($s);
+	if ($s) $struct = trim($s);
 
-	if(is_string($struct) && strpos($struct, '/')) {
+	if (is_string($struct) && strpos($struct, '/')) {
 		$struct = explode('/', $struct);
 		$s = $struct[0];
 	} else {
 		$struct = array($struct);
 	}
+
 	define('API_METHOD', $s);
 
 	unset($s);
@@ -144,7 +147,7 @@ if (defined('API_METHOD'))
 		Plugins::raiseEvent("method.public.about", $response);
 
 		// Provide some basic information about this installation.
-		$Response->Send(200, RESP_OK, array('response' => $response));
+		Response::Send(200, RESP_OK, array('response' => $response));
 	}
 	elseif (API_METHOD == 'ping')
 	{
@@ -152,7 +155,7 @@ if (defined('API_METHOD'))
 		Plugins::raiseEvent("method.public.ping", $response);
 
 		// Report that we're OK.
-		$Response->Send(200, RESP_OK, array(
+		Response::Send(200, RESP_OK, array(
 			'response' => $response
 		));
 	}
@@ -168,17 +171,17 @@ if (defined('API_METHOD'))
 		);
 		Plugins::raiseEvent("method.private.limit", $response);
 
-		$Response->Send(200, RESP_OK, array('response' => $response));
+		Response::Send(200, RESP_OK, array('response' => $response));
 	}
 	else
 	{
 		// Ensure the requesting application is registered, isn't over their hit limit, etc. and register this api hit against their limit.
 		@$Application->Set($request['api_secret']);
 
-		if(isset($request['api_version']) && $request['api_version'] == '2') {
+		if (isset($request['api_version']) && $request['api_version'] == '2') {
 			// Targeting API v2.
 			require('./lib/api.2-0.php');
-		} else {
+		} elseif (HTTP_METHOD == 'GET' OR HTTP_METHOD == 'POST') {
 			// Default to the oldest version for now.
 			require('./lib/api.1-0.php');
 		}
@@ -186,8 +189,8 @@ if (defined('API_METHOD'))
 	}
 }
 
-if( ! Plugins::raiseEvent("method.no_matches")) {
-	$Response->Send(400, RESP_ERR, array(
+if ( ! Plugins::raiseEvent("method.no_matches")) {
+	Response::Send(400, RESP_ERR, array(
 		'error' => 'No supported API methods were invoked.'
 	));
 }
@@ -196,7 +199,10 @@ exit;
 
 function validateString($string, $validation = FILTER_VALIDATE_EMAIL)
 {
-	Plugins::raiseEvent("core.validatestring", array($string, $validation));
+	$temp = array($string, $validation);
+	Plugins::raiseEvent("core.validatestring", $temp);
+	$string = $temp[0];
+	$validation = $temp[1];
 
 	if (filter_var($string, $validation))
 	{
@@ -208,14 +214,14 @@ function validateString($string, $validation = FILTER_VALIDATE_EMAIL)
 
 function api_expectations($expected)
 {
-	global $request, $Response;
+	global $request;
 	Plugins::raiseEvent("core.api_expectations", $expected);
 
 	foreach($expected as $e)
 	{
 		if ( ! isset($request[$e]))
 		{
-			$Response->Send(400, RESP_ERR, array(
+			Response::Send(400, RESP_ERR, array(
 				'error' => 'JSON parameter missing. Expected: ' . implode(',', $expected)
 			));
 		}

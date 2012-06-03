@@ -1,18 +1,20 @@
 <?php
 
-	define("API_ENDPOINT", 'http://10.0.1.9/');
-	define('API_KEY', 'daa9dcce9f263bee648a7ba49f6b3f5d3415293127f697fca9e8c76a4b0775c9');
+	$api = curl_init();
 
-	define('EMAIL_PRIMARY', 'evansims@gmail.com');
-	define('PASSWORD_PRIMARY', 'gibberish');
+	define("API_ENDPOINT", 'http://crowdmapid.local/');
+	define('API_KEY', 'F2C7CC1EF7A73C948504BB43F324050869DB5AAED0C923B2548EE3A2AA985E7E');
 
-	define('EMAIL_SECONDARY', 'evan@ushahidi.com');
-	define('PASSWORD_SECONDARY', 'gibberish2');
+	define('EMAIL_PRIMARY', 'automated@unit.test');
+	define('PASSWORD_PRIMARY', 'password1');
+
+	define('EMAIL_SECONDARY', 'automated2@unit.test');
+	define('PASSWORD_SECONDARY', 'password2');
 
 	$session = array();
-
 	$errors = array();
 	$log = array();
+
 	$methods = array(
 		'about' => array(),
 		'ping' => array(),
@@ -25,28 +27,25 @@
 		'signedin' => array('user_id' => '%user_id%', 'session_id' => '%session_id%'),
 		'sessions' => array('email' => EMAIL_PRIMARY, 'session_id' => '%session_id%'),
 
+		'storage_put' => array('email' => EMAIL_PRIMARY, 'session_id' => '%session_id%', 'key' => 'unit_test', 'value' => 'yes'),
+		'storage_get' => array('email' => EMAIL_PRIMARY, 'session_id' => '%session_id%', 'key' => 'unit_test'),
+
 		'addusertosite' => array('email' => EMAIL_PRIMARY, 'session_id' => '%session_id%', 'url' => 'http://test'),
 		'usersites' => array('email' => EMAIL_PRIMARY, 'session_id' => '%session_id%'),
 		'removeuserfromsite' => array('email' => EMAIL_PRIMARY, 'session_id' => '%session_id%', 'url' => 'http://test'),
 
 		'changeemail' => array('oldemail' => EMAIL_PRIMARY, 'newemail' => EMAIL_SECONDARY, 'password' => PASSWORD_PRIMARY, 'subject' => '[RiverID API v1.0 Test] - /changeemail successful.', 'mailbody' => 'You are receiving this email because someone has initiated an API test. Had this been a real email change request, you would use %token%.'),
-		//'confirmemail' => array(),
-		'changepassword' => array('email' => EMAIL_PRIMARY, 'oldpassword' => PASSWORD_PRIMARY, 'newpassword' => PASSWORD_SECONDARY),
-		'checkpassword' => array('email' => EMAIL_PRIMARY, 'password' => PASSWORD_SECONDARY),
 
-		//'requestpassword' => array(),
-		//'setpassword' => array(),
+		//'changepassword' => array('email' => EMAIL_PRIMARY, 'oldpassword' => PASSWORD_PRIMARY, 'newpassword' => PASSWORD_SECONDARY),
+		'checkpassword' => array('email' => EMAIL_PRIMARY, 'password' => PASSWORD_PRIMARY),
 
-		'signout' => array('email' => EMAIL_PRIMARY, 'session_id' => '%session_id%')
-	);
-
-	$reset = array(
-		'changepassword' => array('email' => EMAIL_PRIMARY, 'oldpassword' => PASSWORD_SECONDARY, 'newpassword' => PASSWORD_PRIMARY),
+		'signout' => array('email' => EMAIL_PRIMARY, 'session_id' => '%session_id%'),
+		'deleteuser' => array('email' => EMAIL_PRIMARY, 'password' => PASSWORD_PRIMARY)
 	);
 
 	function APICall($method, $params = null)
 	{
-		global $session;
+		global $session, $api;
 
 		$params = array_merge(array(
 			'api_secret' => API_KEY
@@ -61,9 +60,9 @@
 			}
 		}
 
-		$api = curl_init(API_ENDPOINT . $method);
+		curl_setopt($api, CURLOPT_URL, API_ENDPOINT . $method);
 
-		if ( $api )
+		if ($api)
 		{
 			curl_setopt($api, CURLOPT_POST, true);
 			curl_setopt($api, CURLOPT_POSTFIELDS, $params);
@@ -74,25 +73,22 @@
 			curl_setopt($api, CURLOPT_RETURNTRANSFER, true);
 
 			$raw = curl_exec($api);
-			$resp = json_decode($raw);
-			$http_status = (int)curl_getinfo($api, CURLINFO_HTTP_CODE);
-			@curl_close($api);
-
-			if(isset($resp->success)) {
-				if($resp->success) {
-					if($method == 'register') {
-						$session['user_id'] = $resp->response;
-					} elseif($method == 'signin') {
-						$session['user_id'] = $resp->response->user_id;
-						$session['session_id'] = $resp->response->session_id;
+			if($resp = json_decode($raw)) {
+				if(isset($resp->success)) {
+					if($resp->success) {
+						if($method == 'register') {
+							$session['user_id'] = $resp->response;
+						} elseif($method == 'signin') {
+							$session['user_id'] = $resp->response->user_id;
+							$session['session_id'] = $resp->response->session_id;
+						}
 					}
 				}
-			}
-			else
-			{
-				echo "Choked on $method w/ $http_status ...<br />";
-				var_dump($raw);
-				exit;
+			} else {
+				$resp = (object)array(
+					'success' => false,
+					'error' => $raw
+				);
 			}
 
 			return $resp;
@@ -110,7 +106,7 @@
 ?><html>
 
 <head>
-	<title>RiverID API Test</title>
+	<title>CrowdmapID API Test</title>
 
 	<style type="text/css">
 
@@ -144,6 +140,11 @@
 		vertical-align: top;
 	}
 
+		#breakdown th.centered,
+		#breakdown td.centered {
+			text-align: center;
+		}
+
 	#breakdown th {
 		background: #f0f0f0;
 		color: #000;
@@ -168,44 +169,54 @@
 
 <body>
 
-<h1>RiverID API v1.0 Test</h1>
+<h1>CrowdmapID API v1.0 Test</h1>
 
 <table id="breakdown">
 <thead>
 	<tr>
 		<th>Call</th>
-		<th>Expected</th>
-		<th>Received</th>
-		<th>Time</th>
+		<th class="centered">Expected</th>
+		<th class="centered">Received</th>
+		<th class="centered">Time</th>
 	</tr>
 </thead>
 <tbody>
 
-<?php foreach($methods as $method => $params):
+<?php
+
+$slowest = 0;
+$slowestMethod = '';
+
+foreach ($methods as $method => $params):
 	$ret = APICall($method, $params);
 	$success = 'TRUE';
+	$benchmark = 'N/A';
+
+	if (isset($ret->benchmark)) {
+		if ($ret->benchmark < $slowest) {
+			$slowest = $ret->benchmark;
+			$slowestMethod = $method;
+		}
+		$benchmark = $ret->benchmark;
+	}
 
 	$color = 'background-color: green';
-	if(!$ret->success) {
+	if ( ! isset($ret->success) OR ! $ret->success) {
 		$color = 'background-color: red';
-		$success = '<a href="#error-' . $method . '">FALSE</a>';
+		$success = "<a href=\"#error-{$method}\">FALSE</a>";
 		$errors[$method] = $ret;
 	}
+
 ?>
 
 	<tr style="<?php echo($color); ?>">
 		<td><?php echo $method ?></td>
-		<td>TRUE</td>
-		<td><?php echo $success ?></td>
-		<td><?php echo $ret->benchmark; ?></td>
+		<td class="centered">TRUE</td>
+		<td class="centered"><?php echo $success ?></td>
+		<td class="centered"><?php echo $benchmark; ?></td>
 	</tr>
 
-<?php endforeach;
-
-	foreach($reset as $method => $params) {
-		$ret = APICall($method, $params);
-	}
-?>
+<?php endforeach; ?>
 
 </tbody>
 </table>
