@@ -14,32 +14,38 @@ class User
 		$_id = $MySQL->Clean($id);
 		  $r = null;
 
-		if ( strlen($id) === 128 )
+		if (strlen($id) === 128)
 		{
 			// Passing a user hash.
+
+			// Check if the user has been merged (technically, redirected) to another hash.
+			if ($r = $MySQL->Pull("SELECT user FROM user_aliases WHERE hash='{$_id}' LIMIT 1;")) {
+				$_id = $r['user'];
+			}
+
 			$r = $MySQL->Pull("SELECT * FROM users WHERE hash='{$_id}' LIMIT 1;");
 		}
-		elseif ( strlen($id) === 64 )
+		elseif (strlen($id) === 64)
 		{
 			// Passing a session hash.
 			if ($r = $MySQL->Pull("SELECT user FROM user_sessions WHERE hash='{$_id}' LIMIT 1;")) {
 				$r = $MySQL->Pull("SELECT * FROM users WHERE id='{$r['user']}' LIMIT 1;");
 			}
 		}
-		elseif ( strpos($id, '@') !== FALSE && strpos($id, '.') !== FALSE && filter_var($id, FILTER_VALIDATE_EMAIL) )
+		elseif (strpos($id, '@') !== FALSE && strpos($id, '.') !== FALSE && filter_var($id, FILTER_VALIDATE_EMAIL))
 		{
 			// Passing an email address.
 			if ($r = $MySQL->Pull("SELECT user FROM user_addresses WHERE email='{$_id}' LIMIT 1;")) {
 				$r = $MySQL->Pull("SELECT * FROM users WHERE id='{$r['user']}' LIMIT 1;");
 			}
 		}
-		elseif ( is_numeric($id) )
+		elseif (is_numeric($id))
 		{
 			// Passing a record id.
 			$r = $MySQL->Pull("SELECT * FROM users WHERE id={$_id} LIMIT 1;");
 		}
 
-		if ( $r && isset($r['id']) )
+		if ($r && isset($r['id']))
 		{
 			$this->data = $r;
 			return true;
@@ -65,7 +71,7 @@ class User
 
 		$exists = $MySQL->Pull("SELECT COUNT(*) FROM user_addresses WHERE email='" . $MySQL->Clean($email) . "' LIMIT 1;");
 
-		if(!(int)$exists['COUNT(*)']) {
+		if ( ! (int)$exists['COUNT(*)']) {
 
 			// Add account to users table.
 			$ret = $MySQL->Push('INSERT INTO users (' . implode(',', array_keys($fields)) . ') VALUES ("' . implode('","', array_map('mysql_real_escape_string', array_values($fields))) . '");');
@@ -73,7 +79,7 @@ class User
 			// Add email address to users table.
 			$MySQL->Push('INSERT INTO user_addresses (user,email,master) VALUES (' . $ret . ',"' . $MySQL->Clean($email) . '",1);');
 
-			if ( $ret )
+			if ($ret)
 			{
 				return(array('hash' => $fields['hash'], 'insertid' => $ret));
 			}
@@ -94,7 +100,7 @@ class User
 	{
 		global $MySQL;
 
-		if ( $url )
+		if ($url)
 		{
 			$url = filter_var(urldecode($url), FILTER_SANITIZE_URL);
 			return $MySQL->Pull('SELECT url FROM user_sites WHERE application=' . $MySQL->Clean($appid) . ' AND user=' . $this->data['id'] . ' AND url="' . $MySQL->Clean($url) . '" LIMIT 1;');
@@ -109,7 +115,7 @@ class User
 	{
 		global $MySQL;
 
-		if ( !$this->Sites($appid, $url) )
+		if ( ! $this->Sites($appid, $url))
 		{
 			$url = filter_var(urldecode($url), FILTER_SANITIZE_URL);
 			$MySQL->Push('INSERT INTO user_sites (user,application,url) VALUES (' . $this->data['id'] . ', ' . $MySQL->Clean($appid) .  ', "' . $MySQL->Clean($url) . '");');
@@ -129,7 +135,7 @@ class User
 	{
 		global $MySQL;
 
-		if ( $session )
+		if ($session)
 		{
 			return $MySQL->Pull('SELECT session as id, expire as expires FROM user_sessions WHERE application=' . $MySQL->Clean($appid) . ' AND user=' . $this->data['id'] . ' AND session="' . $MySQL->Clean($session) . '" LIMIT 1;');
 		}
@@ -145,15 +151,15 @@ class User
 
 		// If the application already has an active session, just return that id.
 		$session = $MySQL->Pull("SELECT * FROM user_sessions WHERE user='{$this->data['id']}' AND application='{$appid}' LIMIT 1;");
-		if($session) {
-			if($extend) {
+		if ($session) {
+			if ($extend) {
 				$MySQL->Push("UPDATE user_sessions SET expire=TIMESTAMPADD(SECOND, " . CFG_USER_SESSION_EXPIRES . ', NOW()) WHERE application="' . $MySQL->Clean($appid) . '" AND id="' . $MySQL->Clean($session['id']) . '" LIMIT 1;');
 			}
 			return $session['session'];
 		}
 
 		$dupe = 1;
-		while ( $dupe )
+		while ($dupe)
 		{
 			$session = $Security->randHash(64);
 			$dupe = $MySQL->Pull("SELECT COUNT(*) FROM user_sessions WHERE session='{$session}' LIMIT 1;");
@@ -166,7 +172,7 @@ class User
 
 	public function sessionDelete($appid, $session)
 	{
-		if ( !$session OR !is_string($session) OR strlen($session) != 64 )
+		if ( ! $session OR !is_string($session) OR strlen($session) != 64)
 		{
 			return false;
 		}
@@ -177,21 +183,21 @@ class User
 
 	private function __Property($var, $update = null, $filter = null)
 	{
-		if ( $update !== null )
+		if ($update !== null)
 		{
 			global $MySQL;
 
-			if ( ! $filter )
+			if ( ! $filter)
 			{
 				$filter = FILTER_SANITIZE_STRING;
 			}
 
 			$update = $MySQL->Clean(trim(filter_var($update, $filter)));
 
-			if ( $update !== null )
+			if ($update !== null)
 			{
 				$ret = $MySQL->Push('UPDATE users SET ' . $var . '="' . $update . '" WHERE id=' . $this->data['id'] . ' LIMIT 1;');
-				if ( $ret )
+				if ($ret)
 				{
 					$this->data[$var] = $update;
 					return $this->data[$var];
@@ -229,7 +235,7 @@ class User
 
 		if($address = filter_var($address, FILTER_SANITIZE_EMAIL)) {
 			$exists = $MySQL->Pull("SELECT COUNT(*),user FROM user_addresses WHERE email='" . $MySQL->Clean($address) . "' LIMIT 1;");
-			if(!(int)$exists['COUNT(*)']) {
+			if ( ! (int)$exists['COUNT(*)']) {
 				// All clear.
 				return $MySQL->Push('INSERT INTO user_addresses (user,email,master,confirmed) VALUES (' . $this->data['id'] . ', "' . $MySQL->Clean($address) . '",' . (int)$primary . ',' . (int)$confirmed . ');');
 			} elseif($exists['user'] == $this->data['id']) {
@@ -244,13 +250,13 @@ class User
 	{
 		global $MySQL;
 
-		if($address = filter_var($address, FILTER_SANITIZE_EMAIL)) {
+		if ($address = filter_var($address, FILTER_SANITIZE_EMAIL)) {
 			$exists = $MySQL->Pull("SELECT id,master FROM user_addresses WHERE user=" . $MySQL->Clean($this->data['id']) . " AND email='" . $MySQL->Clean($address) . "' LIMIT 1;");
-			if($exists) {
-				if($exists['master']) {
+			if ($exists) {
+				if ($exists['master']) {
 					return 'You cannot remove your primary email address.';
 				} else {
-					if($MySQL->Push('DELETE FROM user_addresses WHERE id=' . $exists['id'] . ' LIMIT 1;')) {
+					if ($MySQL->Push('DELETE FROM user_addresses WHERE id=' . $exists['id'] . ' LIMIT 1;')) {
 						return true;
 					}
 				}
@@ -264,15 +270,15 @@ class User
 	{
 		global $MySQL;
 
-		if($address = filter_var($address, FILTER_SANITIZE_EMAIL)) {
+		if ($address = filter_var($address, FILTER_SANITIZE_EMAIL)) {
 			$exists = $MySQL->Pull("SELECT id,confirmed FROM user_addresses WHERE user=" . $MySQL->Clean($this->data['id']) . " AND email='" . $MySQL->Clean($address) . "' LIMIT 1;");
-			if($exists) {
-				if($exists['confirmed']) {
+			if ($exists) {
+				if ($exists['confirmed']) {
 					// Already confirmed. Nod politely.
 					return true;
 				} else {
 					// Update address' confirmed flag.
-					if($MySQL->Push('UPDATE user_addresses SET confirmed=1 WHERE id=' . $exists['id'] . ' LIMIT 1;')) {
+					if ($MySQL->Push('UPDATE user_addresses SET confirmed=1 WHERE id=' . $exists['id'] . ' LIMIT 1;')) {
 						return true;
 					}
 				}
@@ -286,10 +292,10 @@ class User
 	{
 		global $MySQL;
 
-		if($address = filter_var($address, FILTER_SANITIZE_EMAIL)) {
+		if ($address = filter_var($address, FILTER_SANITIZE_EMAIL)) {
 			$exists = $MySQL->Pull("SELECT id,master FROM user_addresses WHERE user=" . $MySQL->Clean($this->data['id']) . " AND email='" . $MySQL->Clean($address) . "' LIMIT 1;");
-			if($exists) {
-				if($exists['master']) {
+			if ($exists) {
+				if ($exists['master']) {
 					// This account is already the primary.
 					return true;
 				} else {
@@ -322,7 +328,7 @@ class User
 
 	public function Password($update = null)
 	{
-		if($update) {
+		if ($update) {
 			global $Security;
 			$update = $Security->Hash($update, 128);
 			$this->passwordChanged(true);
@@ -335,7 +341,7 @@ class User
 	{
 		global $MySQL;
 
-		if($update) {
+		if ($update) {
 			return $MySQL->Pull("UPDATE users SET password_changed=CURRENT_TIMESTAMP() WHERE id=" . $MySQL->Clean($this->data['id']) . " LIMIT 1;");
 		} else {
 			$r = $MySQL->Pull("SELECT password_changed FROM users WHERE id=" . $MySQL->Clean($this->data['id']) . " LIMIT 1;");
@@ -369,8 +375,8 @@ class User
 		global $MySQL;
 		$badge = strtolower($badge);
 
-		if(is_array($update) && isset($update['title']) && isset($update['description']) && isset($update['graphic']) && isset($update['url']) && isset($update['category'])) {
-			if($resp = $this->Badge($appid, $badge)) {
+		if (is_array($update) && isset($update['title']) && isset($update['description']) && isset($update['graphic']) && isset($update['url']) && isset($update['category'])) {
+			if ($resp = $this->Badge($appid, $badge)) {
 				return $MySQL->Push("UPDATE user_badges SET title='" . $MySQL->Clean($update['title']) . "', description='" . $MySQL->Clean($update['description']) . "', graphic='" . $MySQL->Clean($update['graphic']) . "', url='" . $MySQL->Clean($update['url']) . "', category='" . $MySQL->Clean($update['category']) . "' WHERE application='" . $MySQL->Clean($appid) . "' AND user='" . $MySQL->Clean($this->data['id']) . "' AND badge='" . $MySQL->Clean($badge) . "' LIMIT 1;");
 			} else {
 				return $MySQL->Push("INSERT INTO user_badges (application,user,badge,title,description,graphic,url,category) VALUES ('" . $MySQL->Clean($appid) . "', '" . $MySQL->Clean($this->data['id']) . "', '" . $MySQL->Clean($badge) . "', '" . $MySQL->Clean($update['title']) . "', '" . $MySQL->Clean($update['description']) . "', '" . $MySQL->Clean($update['graphic']) . "', '" . $MySQL->Clean($update['url']) . "', '" . $MySQL->Clean($update['category']) . "');");
@@ -386,7 +392,7 @@ class User
 	{
 		global $MySQL;
 
-		if($returnAll == true) {
+		if ($returnAll == true) {
 			return $MySQL->Pull("SELECT badge,description,graphic,url,category,awarded FROM user_badges WHERE user='" . $this->data['id'] . "' ORDER BY badge;"); //" GROUP BY category;");
 		} else {
 			return $MySQL->Pull("SELECT badge,description,graphic,url,category,awarded FROM user_badges WHERE user='" . $this->data['id'] . "' AND application='" . $MySQL->Clean($appid) . "' ORDER BY badge;"); //" GROUP BY category;");
@@ -397,7 +403,7 @@ class User
 	{
 		$key = md5('user_cache_' . $this->data['id'] . '_' . $appid . '_' . $key);
 
-		if($value) {
+		if ($value) {
 			Cache::Set($key, $value, $expires);
 			return true;
 		} else {
@@ -409,19 +415,19 @@ class User
 	{
 		global $MySQL;
 
-		if($key !== null) {
-			if($update !== null) {
+		if ($key !== null) {
+			if ($update !== null) {
 				// Purge any existing copies of this storage.
-				if($public) {
+				if( $public) {
 					$MySQL->Push('DELETE FROM user_storage WHERE user=' . $this->data['id'] . ' AND storage_public=1 AND storage_key="' . $MySQL->Clean($key) . '";');
 				} else {
 					$MySQL->Push('DELETE FROM user_storage WHERE user=' . $this->data['id'] . ' AND application=' . $MySQL->Clean($appid) . ' AND storage_public=0 AND storage_key="' . $MySQL->Clean($key) . '";');
 				}
 
-				if(strlen($update)) {
+				if (strlen($update)) {
 					$update = str_replace('%NOW%', time(), $update);
 
-					if($expires && is_numeric($expires)) {
+					if ($expires && is_numeric($expires)) {
 						$expires = $MySQL->Pull("SELECT TIMESTAMPADD(SECOND, {$expires}, NOW()) as expires LIMIT 1;");
 						$expires = $expires['expires'];
 					} else {
@@ -439,13 +445,13 @@ class User
 					);
 				}
 			} else {
-				if($public) {
+				if ($public) {
 					$storage = $MySQL->Pull('SELECT storage_value FROM user_storage WHERE user=' . $this->data['id'] . ' AND storage_public=1 AND storage_key="' . $MySQL->Clean($key) . '" LIMIT 1;');
 				} else {
 					$storage = $MySQL->Pull('SELECT storage_value FROM user_storage WHERE user=' . $this->data['id'] . ' AND application=' . $MySQL->Clean($appid) . ' AND storage_public=0 AND storage_key="' . $MySQL->Clean($key) . '" LIMIT 1;');
 				}
 
-				if(isset($storage['storage_value'])) return $storage['storage_value'];
+				if (isset($storage['storage_value'])) return $storage['storage_value'];
 				return false;
 			}
 		} else {
@@ -453,46 +459,21 @@ class User
 		}
 	}
 
-/*
-	public function apigeeSmartKey($appid)
-	{
-
-		$smartKey = $this->Storage($appid, 'apigee_smartkey');
-
-		if(!$smartKey) {
-			$userHash = 'USR' . $this->ID();
-			$smartKey = Apigee::getUserSmartKey($userHash);
-
-			if(!$smartKey) {
-				// User has not been registered with this Apigee application yet.
-				$smartKey = Apigee::registerUser($userHash);
-			}
-
-			if($smartKey) {
-				$this->Storage($appid, 'apigee_smartkey', $smartKey, false, 86400); // Do we need to ever refresh our smart token from Apigee? I'm thinking not.
-			}
-		}
-
-		return $smartKey;
-
-	}
-*/
-
 	public function Token($update = null)
 	{
-		if ( $update && is_array($update) )
+		if ($update && is_array($update))
 		{
-			if ( isset($update['token']) )
+			if (isset($update['token']))
 			{
 				$this->__Property('token', $update['token']);
 			}
 
-			if ( isset($update['memory']) )
+			if (isset($update['memory']))
 			{
 				$this->__Property('token_memory', $update['memory']);
 			}
 
-			if ( isset($update['expires']) )
+			if (isset($update['expires']))
 			{
 				global $MySQL;
 				$stamp = $MySQL->Pull("SELECT TIMESTAMPADD(SECOND, {$update['expires']}, NOW()) as expires LIMIT 1;");
@@ -517,25 +498,25 @@ class User
 
 	public function Admin($update = null)
 	{
-		if ( $update )
+		if ($update)
 		{
-			if ( $update === TRUE )
+			if ($update === TRUE)
 			{
 				$update = 1;
 			}
-			elseif( $update === FALSE )
+			elseif ($update === FALSE)
 			{
 				$update = 0;
 			}
-			elseif ( !is_numeric($update) )
+			elseif ( ! is_numeric($update))
 			{
 				$update = null;
 			}
-			elseif( $update < 1 )
+			elseif ($update < 1)
 			{
 				$update = 0;
 			}
-			elseif( $update > 1 )
+			elseif ($update > 1)
 			{
 				$update = 1;
 			}
@@ -550,6 +531,5 @@ $User = new User();
 function listUsers() {
 	global $MySQL;
 	return $MySQL->Pull("SELECT hash,registered FROM users");
-	//return $MySQL->Pull("SELECT * FROM users;");
 }
 
