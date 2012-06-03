@@ -10,15 +10,15 @@ SET time_zone = "+00:00";
 DROP TABLE IF EXISTS `applications`;
 CREATE TABLE IF NOT EXISTS `applications` (
   `id` tinyint(4) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' COMMENT 'Name of the application/website.',
-  `url` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' COMMENT 'User-facing URL for the application/website.',
-  `secret` char(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT 'A secret hash to secure communication.',
-  `ratelimit` smallint(6) unsigned NOT NULL DEFAULT '5000' COMMENT 'The maximum number of hits an application can make against the API before it is cut off. 0 turns off this limit for the application.',
+  `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `url` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `secret` char(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
+  `ratelimit` smallint(6) unsigned NOT NULL DEFAULT '5000',
   `mail_from` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-  `note` text COLLATE utf8_unicode_ci NOT NULL COMMENT 'For internal use only.',
-  `admin_email` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' COMMENT 'Contact address',
-  `admin_identity` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' COMMENT 'Contact name',
-  `debug` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT 'When set to 1 additional benchmarking and debug data will be exposed with API calls.',
+  `note` text COLLATE utf8_unicode_ci NOT NULL,
+  `admin_email` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `admin_identity` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `debug` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `registered` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `admin_access` tinyint(1) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
@@ -27,8 +27,8 @@ CREATE TABLE IF NOT EXISTS `applications` (
 
 DROP TABLE IF EXISTS `application_hits`;
 CREATE TABLE IF NOT EXISTS `application_hits` (
-  `application` tinyint(4) unsigned NOT NULL COMMENT 'The id of the originating application.',
-  `expires` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Timestamp of when the API hit is intended to expire.',
+  `application` tinyint(4) unsigned NOT NULL,
+  `expires` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   KEY `application` (`application`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='A log of incoming API calls. Used to determine when an appli';
 DROP TRIGGER IF EXISTS `application_hits_expiring`;
@@ -61,21 +61,21 @@ CREATE TABLE IF NOT EXISTS `statistics` (
 
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE IF NOT EXISTS `users` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Internal identifier for this user.',
-  `hash` char(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT 'Identifying hash for the user.',
-  `password` char(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT 'Partial hash of the user''s password.',
-  `password_changed` timestamp NULL DEFAULT NULL COMMENT 'When the user last updated their password.',
-  `question` varchar(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' COMMENT 'Lost password question.',
-  `answer` char(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' COMMENT 'Lost password answer.',
-  `token` char(32) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '' COMMENT 'Authorization token for making modifications to the account.',
-  `token_memory` varchar(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' COMMENT 'The pending string alteration assigned to the token.',
-  `token_expires` timestamp NULL DEFAULT NULL COMMENT 'When the authorization token expires.',
-  `registered` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Timestamp of when the user registered with the system.',
-  `avatar` varchar(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' COMMENT 'URL to the user''s profile graphic.',
-  `admin` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT 'Is the user an administrator of this RiverID installation?',
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `hash` char(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
+  `password` char(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
+  `password_changed` timestamp NULL DEFAULT NULL,
+  `question` varchar(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `answer` char(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `token` char(32) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '',
+  `token_memory` varchar(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `token_expires` timestamp NULL DEFAULT NULL,
+  `registered` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `avatar` varchar(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `admin` tinyint(1) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `hash` (`hash`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci CHECKSUM=1 COMMENT='Registry of user accounts.';
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci CHECKSUM=1 COMMENT='Registry of user accounts.';
 
 DROP TABLE IF EXISTS `user_addresses`;
 CREATE TABLE IF NOT EXISTS `user_addresses` (
@@ -89,29 +89,29 @@ CREATE TABLE IF NOT EXISTS `user_addresses` (
   KEY `email` (`email`),
   KEY `user` (`user`),
   KEY `master` (`master`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Registry of user email addresses.';
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Registry of user email addresses.';
 
 DROP TABLE IF EXISTS `user_aliases`;
 CREATE TABLE IF NOT EXISTS `user_aliases` (
-  `hash` char(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT 'Hash of the user being redirected.',
-  `user` char(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT 'Hash of the user to be redirected to.',
-  `note` text COLLATE utf8_unicode_ci NOT NULL COMMENT 'For internal use only.',
+  `hash` char(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
+  `user` char(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
+  `note` text COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`hash`),
   KEY `user` (`user`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=FIXED COMMENT='A registry of accounts that have been merged. Applications';
 
 DROP TABLE IF EXISTS `user_badges`;
 CREATE TABLE IF NOT EXISTS `user_badges` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Internal identifier for this badge.',
-  `user` int(11) unsigned NOT NULL COMMENT 'Internal identifier of the associated user.',
-  `application` tinyint(4) unsigned NOT NULL COMMENT 'Internal identifier of the associated application.',
-  `badge` varchar(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' COMMENT 'String identifying the badge. Should be all lowercase.',
-  `title` varchar(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' COMMENT 'Badge name.',
-  `description` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' COMMENT 'Badge description.',
-  `graphic` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' COMMENT 'URL to graphic associated with the badge.',
-  `url` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' COMMENT 'URL associated with the badge.',
-  `category` varchar(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' COMMENT 'Optional: How this badge should be grouped.',
-  `awarded` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When this badge was awarded to the user.',
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `user` int(11) unsigned NOT NULL,
+  `application` tinyint(4) unsigned NOT NULL,
+  `badge` varchar(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `title` varchar(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `description` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `graphic` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `url` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `category` varchar(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `awarded` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `application` (`application`),
   KEY `user` (`user`),
@@ -120,24 +120,24 @@ CREATE TABLE IF NOT EXISTS `user_badges` (
 
 DROP TABLE IF EXISTS `user_sessions`;
 CREATE TABLE IF NOT EXISTS `user_sessions` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Internal identifier for this session.',
-  `user` int(11) unsigned NOT NULL COMMENT 'Internal identifier of the associated user.',
-  `application` tinyint(4) unsigned NOT NULL COMMENT 'Internal identifier of the associated application.',
-  `session` char(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '64-character alphanumeric unique session identifier.',
-  `expire` timestamp NULL DEFAULT NULL COMMENT 'When this session should expire if unused.',
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `user` int(11) unsigned NOT NULL,
+  `application` tinyint(4) unsigned NOT NULL,
+  `session` char(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
+  `expire` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `user` (`user`),
   KEY `application` (`application`),
   KEY `session` (`session`),
   KEY `expire` (`expire`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Registry of user sessions.';
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Registry of user sessions.';
 
 DROP TABLE IF EXISTS `user_sites`;
 CREATE TABLE IF NOT EXISTS `user_sites` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Internal identifier for this site.',
-  `user` int(11) unsigned NOT NULL COMMENT 'Internal identifier of the associated user.',
-  `application` tinyint(4) unsigned NOT NULL COMMENT 'Internal identifier of the associated application.',
-  `url` varchar(256) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT 'Associated website address.',
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `user` int(11) unsigned NOT NULL,
+  `application` tinyint(4) unsigned NOT NULL,
+  `url` varchar(256) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   PRIMARY KEY (`id`),
   KEY `url` (`url`(255)),
   KEY `application` (`application`),
@@ -146,13 +146,13 @@ CREATE TABLE IF NOT EXISTS `user_sites` (
 
 DROP TABLE IF EXISTS `user_storage`;
 CREATE TABLE IF NOT EXISTS `user_storage` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Internal identifier for this storage resource.',
-  `user` int(11) unsigned NOT NULL COMMENT 'Internal identifier of the associated user.',
-  `application` tinyint(4) unsigned NOT NULL COMMENT 'Internal identifier of the associated application.',
-  `storage_public` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT 'Is this storage value available to other applications?',
-  `storage_key` varchar(255) COLLATE utf8_unicode_ci NOT NULL COMMENT 'A string uniquely identifying this stored value.',
-  `storage_value` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' COMMENT 'A stored value.',
-  `storage_expires` timestamp NULL DEFAULT NULL COMMENT 'Optional: A TIMESTAMP indicating when this stored value should be purged.',
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `user` int(11) unsigned NOT NULL,
+  `application` tinyint(4) unsigned NOT NULL,
+  `storage_public` tinyint(1) unsigned NOT NULL DEFAULT '0',
+  `storage_key` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `storage_value` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `storage_expires` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `application` (`application`),
   KEY `user` (`user`),
@@ -177,8 +177,8 @@ ALTER TABLE `user_badges`
   ADD CONSTRAINT `user_badges_ibfk_4` FOREIGN KEY (`application`) REFERENCES `applications` (`id`) ON UPDATE CASCADE;
 
 ALTER TABLE `user_sessions`
-  ADD CONSTRAINT `user_sessions_ibfk_4` FOREIGN KEY (`application`) REFERENCES `applications` (`id`) ON UPDATE CASCADE,
-  ADD CONSTRAINT `user_sessions_ibfk_3` FOREIGN KEY (`user`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `user_sessions_ibfk_3` FOREIGN KEY (`user`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `user_sessions_ibfk_4` FOREIGN KEY (`application`) REFERENCES `applications` (`id`) ON UPDATE CASCADE;
 
 ALTER TABLE `user_sites`
   ADD CONSTRAINT `user_sites_ibfk_3` FOREIGN KEY (`user`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
