@@ -7,8 +7,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8 */;
 
 
-DROP TABLE IF EXISTS `applications`;
-CREATE TABLE IF NOT EXISTS `applications` (
+ALTER TABLE IF EXISTS `applications` (
   `id` tinyint(4) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `url` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
@@ -25,8 +24,7 @@ CREATE TABLE IF NOT EXISTS `applications` (
   UNIQUE KEY `secret` (`secret`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci CHECKSUM=1 COMMENT='Registry of applications that are allowed access to this ser';
 
-DROP TABLE IF EXISTS `application_hits`;
-CREATE TABLE IF NOT EXISTS `application_hits` (
+ALTER TABLE IF EXISTS `application_hits` (
   `application` tinyint(4) unsigned NOT NULL,
   `expires` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   KEY `application` (`application`)
@@ -50,8 +48,7 @@ END
 //
 DELIMITER ;
 
-DROP TABLE IF EXISTS `statistics`;
-CREATE TABLE IF NOT EXISTS `statistics` (
+ALTER TABLE IF EXISTS `statistics` (
   `stat_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `stat_value` int(11) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`stat_name`),
@@ -59,8 +56,7 @@ CREATE TABLE IF NOT EXISTS `statistics` (
   KEY `stat_value` (`stat_value`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='A collection of various statistics about the service.';
 
-DROP TABLE IF EXISTS `users`;
-CREATE TABLE IF NOT EXISTS `users` (
+ALTER TABLE IF EXISTS `users` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `hash` char(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   `password` char(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
@@ -77,8 +73,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   UNIQUE KEY `hash` (`hash`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci CHECKSUM=1 COMMENT='Registry of user accounts.';
 
-DROP TABLE IF EXISTS `user_addresses`;
-CREATE TABLE IF NOT EXISTS `user_addresses` (
+ALTER TABLE IF EXISTS `user_addresses` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `user` int(11) unsigned NOT NULL,
   `email` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
@@ -91,8 +86,7 @@ CREATE TABLE IF NOT EXISTS `user_addresses` (
   KEY `master` (`master`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Registry of user email addresses.';
 
-DROP TABLE IF EXISTS `user_aliases`;
-CREATE TABLE IF NOT EXISTS `user_aliases` (
+ALTER TABLE IF EXISTS `user_aliases` (
   `hash` char(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   `user` char(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   `note` text COLLATE utf8_unicode_ci NOT NULL,
@@ -100,8 +94,7 @@ CREATE TABLE IF NOT EXISTS `user_aliases` (
   KEY `user` (`user`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=FIXED COMMENT='A registry of accounts that have been merged. Applications';
 
-DROP TABLE IF EXISTS `user_badges`;
-CREATE TABLE IF NOT EXISTS `user_badges` (
+ALTER TABLE IF EXISTS `user_badges` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `user` int(11) unsigned NOT NULL,
   `application` tinyint(4) unsigned NOT NULL,
@@ -118,8 +111,7 @@ CREATE TABLE IF NOT EXISTS `user_badges` (
   KEY `badge` (`badge`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Registry of user badges.';
 
-DROP TABLE IF EXISTS `user_sessions`;
-CREATE TABLE IF NOT EXISTS `user_sessions` (
+ALTER TABLE IF EXISTS `user_sessions` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `user` int(11) unsigned NOT NULL,
   `application` tinyint(4) unsigned NOT NULL,
@@ -132,8 +124,7 @@ CREATE TABLE IF NOT EXISTS `user_sessions` (
   KEY `expire` (`expire`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Registry of user sessions.';
 
-DROP TABLE IF EXISTS `user_sites`;
-CREATE TABLE IF NOT EXISTS `user_sites` (
+ALTER TABLE IF EXISTS `user_sites` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `user` int(11) unsigned NOT NULL,
   `application` tinyint(4) unsigned NOT NULL,
@@ -144,8 +135,7 @@ CREATE TABLE IF NOT EXISTS `user_sites` (
   KEY `user` (`user`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Registry of sites associated with user accounts.';
 
-DROP TABLE IF EXISTS `user_storage`;
-CREATE TABLE IF NOT EXISTS `user_storage` (
+ALTER TABLE IF EXISTS `user_storage` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `user` int(11) unsigned NOT NULL,
   `application` tinyint(4) unsigned NOT NULL,
@@ -189,18 +179,14 @@ ALTER TABLE `user_storage`
   ADD CONSTRAINT `user_storage_ibfk_5` FOREIGN KEY (`application`) REFERENCES `applications` (`id`) ON UPDATE CASCADE;
 
 DELIMITER $$
-DROP EVENT `application_hits_cleanup`$$
 CREATE EVENT `application_hits_cleanup` ON SCHEDULE EVERY 1 MINUTE STARTS '2012-01-01 00:00:00' ON COMPLETION PRESERVE ENABLE DO DELETE FROM application_hits WHERE expires < NOW()$$
 
-DROP EVENT `users_tokens_cleanup`$$
 CREATE EVENT `users_tokens_cleanup` ON SCHEDULE EVERY 5 MINUTE STARTS '2012-01-01 00:00:00' ON COMPLETION PRESERVE ENABLE DO UPDATE users 
 SET token = '', token_memory = '', token_expires = NULL 
 WHERE expires IS NOT NULL AND expires < NOW()$$
 
-DROP EVENT `user_sessions_cleanup`$$
 CREATE EVENT `user_sessions_cleanup` ON SCHEDULE EVERY 5 MINUTE STARTS '2012-01-01 00:00:00' ON COMPLETION PRESERVE ENABLE DO DELETE FROM user_sessions WHERE expires IS NOT NULL AND expire < NOW()$$
 
-DROP EVENT `user_storage_cleanup`$$
 CREATE EVENT `user_storage_cleanup` ON SCHEDULE EVERY 5 MINUTE STARTS '2012-01-01 00:00:00' ON COMPLETION PRESERVE ENABLE DO DELETE FROM user_storage WHERE expires IS NOT NULL AND expires < NOW()$$
 
 DELIMITER ;
