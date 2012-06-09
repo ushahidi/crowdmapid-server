@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * CrowdmapID Configuration
+ *
+ * @package    CrowdmapID
+ * @author     Ushahidi Team <team@ushahidi.com>
+ * @copyright  Ushahidi - http://www.ushahidi.com
+ * @license    http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL)
+ */
+
 if(!defined('LOADED_SAFELY')) die('You cannot access this file directly.');
 
 // Enable for troubleshooting. Disable for improved performance.
@@ -35,3 +44,8 @@ define('CFG_USER_SESSION_EXPIRES',  86400 );
 define(  'CFG_USE_SENDGRID',  false );
 define( 'CFG_SENDGRID_USER',  '' );
 define(  'CFG_SENDGRID_KEY',  '' );
+
+// If you're going to use the optional Yubikey plugin, uncomment these.
+// These can be generated at https://upgrade.yubico.com/getapikey/
+//define('YUBIKEY_CLIENT_ID', 0);
+//define('YUBIKEY_CLIENT_KEY', '');

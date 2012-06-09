@@ -11,6 +11,8 @@ class User
 	{
 		global $MySQL;
 
+		Plugins::raiseEvent("user.set.pre", $id);
+
 		$_id = $MySQL->Clean($id);
 		  $r = null;
 
@@ -47,10 +49,12 @@ class User
 
 		if ($r && isset($r['id']))
 		{
+			Plugins::raiseEvent("user.set.succeed", $r);
 			$this->data = $r;
 			return true;
 		}
 
+		Plugins::raiseEvent("user.set.fail");
 		return false;
 	}
 
@@ -78,6 +82,8 @@ class User
 
 			// Add email address to users table.
 			$MySQL->Push('INSERT INTO user_addresses (user,email,master) VALUES (' . $ret . ',"' . $MySQL->Clean($email) . '",1);');
+
+			$MySQL->Push('UPDATE users SET password_changed=CURRENT_TIMESTAMP() WHERE id=' . $ret . ' LIMIT 1;');
 
 			if ($ret)
 			{
@@ -225,7 +231,7 @@ class User
 		global $MySQL;
 
 		// Return all associated email addresses for the account.
-		$emails = $MySQL->Pull("SELECT email,master,confirmed,registered FROM user_addresses WHERE user=" . $this->data['id']);
+		$emails = $MySQL->Pull("SELECT email,master,confirmed,registered FROM user_addresses WHERE user=" . $this->data['id'] . " ORDER BY master DESC, registered ASC");
 		return $emails;
 	}
 

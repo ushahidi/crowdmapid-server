@@ -63,13 +63,9 @@ if($api_collection == 'user') {
 							}
 
 							if($resp === TRUE) {
-
-								Response::Send(200, RESP_OK, array());
-
+								Response::Send(200, RESP_OK, array('emails' => $User->Emails()));
 							} else {
-
 								Response::Send(404, RESP_ERR, array('error' => $resp));
-
 							}
 
 						} else {
@@ -88,7 +84,7 @@ if($api_collection == 'user') {
 							$resp = $User->emailRemove($api_action_value);
 
 							if($resp === TRUE) {
-								Response::Send(200, RESP_OK, array());
+								Response::Send(200, RESP_OK, array('emails' => $User->Emails()));
 							} else {
 								Response::Send(404, RESP_ERR, array('error' => $resp));
 							}
@@ -129,17 +125,23 @@ if($api_collection == 'user') {
 						$confirmed = (isset($request['confirmed']) ? true : false);
 						$primary = (isset($request['primary']) ? true : false);
 
-						if($User->Set($api_user) && filter_var($request['email'], FILTER_VALIDATE_EMAIL)) {
+						if(filter_var($request['email'], FILTER_VALIDATE_EMAIL)) {
+							if($User->Set($api_user)) {
 
-							if($User->emailAdd($request['email'], $primary, $confirmed)) {
-								Response::Send(200, RESP_OK, array());
+								if($User->emailAdd($request['email'], $primary, $confirmed)) {
+									Response::Send(200, RESP_OK, array('emails' => $User->Emails()));
+								}
+
+							} else {
+								Response::Send(400, RESP_ERR, array(
+									'error' => 'This address has already been claimed.'
+								));
 							}
-
+						} else {
+							Response::Send(400, RESP_ERR, array(
+								'error' => 'That does not appear to be a properly formatted address.'
+							));
 						}
-
-						Response::Send(400, RESP_ERR, array(
-							'error' => 'This email address is already registered to another account.'
-						));
 
 					}
 
@@ -147,19 +149,50 @@ if($api_collection == 'user') {
 
 			} elseif($api_action == 'password') { // /user/:user_id/password
 
-				api_expectations(array('password'));
-
 				if(HTTP_METHOD == 'GET') {
 
-					if($User->Password() == $Security->Hash($request['password'], 128)) {
-						Response::Send(200, RESP_OK, array());
+					if(isset($request['password'])) {
+
+						$activity = array(
+							'override' => false, 'error' => null,
+							'user' => $User, 'raw' => $request['password'],
+							'hash' => $Security->Hash($request['password'], 128));
+
+						Plugins::raiseEvent("method.private.password.get.pre", $activity);
+
+						if($activity['override']) {
+							if($activity['error']) {
+								Response::Send(500, RESP_ERR, array(
+									'error' => $activity['error']
+								));
+							} else {
+								Response::Send(200, RESP_OK, array('user_id' => $User->Hash(), 'session_id' => $User->Session($Application->ID())));
+							}
+						}
+
+						if($User->Password() == $activity['hash']) {
+							Response::Send(200, RESP_OK, array('user_id' => $User->Hash(), 'session_id' => $User->Session($Application->ID())));
+						} else {
+							$error = 'Incorrect password.';
+
+							if (strlen($request['password']) && strtoupper($request['password']) == $request['password']) {
+								$error .= ' You appear to have your caps lock on.';
+							}
+
+							Response::Send(500, RESP_ERR, array(
+								'error' => $error
+							));
+						}
+
 					} else {
-						Response::Send(500, RESP_ERR, array(
-							'error' => 'Incorrect password.'
-						));
+
+						Response::Send(200, RESP_OK, array('lastChanged' => $User->passwordChanged()));
+
 					}
 
 				} elseif(HTTP_METHOD == 'POST' || HTTP_METHOD == 'PUT') {
+
+					api_expectations(array('password'));
 
 					if (strlen($request['password']) < 5 || strlen($request['password']) > 128) {
 						Response::Send(200, RESP_ERR, array(
