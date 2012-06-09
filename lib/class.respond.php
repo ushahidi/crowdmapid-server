@@ -104,7 +104,7 @@ class Response {
 
 		header("X-Frame-Options: deny");
 
-		if(class_exists(Plugins))
+		if(class_exists('Plugins'))
 			Plugins::raiseEvent("core.response_http_headers");
 
 		$resp = array();
