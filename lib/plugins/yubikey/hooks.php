@@ -161,7 +161,6 @@ function yubikeyGetIdentity($otp) {
 	require_once(PLUGINS_DIRECTORY . 'yubikey/modhex.php');
 	$identity = base_convert(b64ToHex(modhexToB64($matches[4])), 16, 10);
 
-	file_put_contents("yubikey.txt", print_r($identity, true));
 	return $identity;
 
 }
