@@ -424,7 +424,7 @@ class User
 		if ($key !== null) {
 			if ($update !== null) {
 				// Purge any existing copies of this storage.
-				if( $public) {
+				if($public) {
 					$MySQL->Push('DELETE FROM user_storage WHERE user=' . $this->data['id'] . ' AND storage_public=1 AND storage_key="' . $MySQL->Clean($key) . '";');
 				} else {
 					$MySQL->Push('DELETE FROM user_storage WHERE user=' . $this->data['id'] . ' AND application=' . $MySQL->Clean($appid) . ' AND storage_public=0 AND storage_key="' . $MySQL->Clean($key) . '";');
@@ -449,6 +449,8 @@ class User
 						$MySQL->Clean($update) . '", "' .
 						$expires . '");'
 					);
+				} else {
+					return true;
 				}
 			} else {
 				if ($public) {
