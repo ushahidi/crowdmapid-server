@@ -238,10 +238,22 @@ elseif (API_METHOD == 'changeemail')
 
 	if ($User->Set($request['oldemail']))
 	{
-		// Encode submitted password so we can compare.
-		$password = $Security->Hash($request['password'], 128);
+		$activity = array(
+			'override' => false, 'error' => null,
+			'user' => $User, 'raw' => $request['password'],
+			'hash' => $Security->Hash($request['password'], 128));
 
-		if ($User->Password() === $password)
+		Plugins::raiseEvent("method.private.password.get.pre", $activity);
+
+		if($activity['override']) {
+			if($activity['error']) {
+				Response::Send(500, RESP_ERR, array(
+					'error' => $activity['error']
+				));
+			}
+		}
+
+		if ($activity['override'] || $User->Password() === $activity['hash'])
 		{
 			if (validateString($request['oldemail']))
 			{
@@ -353,10 +365,22 @@ elseif (API_METHOD == 'changepassword')
 
 	if ($User->Set($request['email']))
 	{
-		// Encode submitted passwords so we can compare.
-		$request['oldpassword'] = $Security->Hash($request['oldpassword'], 128);
+		$activity = array(
+			'override' => false, 'error' => null,
+			'user' => $User, 'raw' => $request['oldpassword'],
+			'hash' => $Security->Hash($request['oldpassword'], 128));
 
-		if ($User->Password() === $request['oldpassword'])
+		Plugins::raiseEvent("method.private.password.get.pre", $activity);
+
+		if($activity['override']) {
+			if($activity['error']) {
+				Response::Send(500, RESP_ERR, array(
+					'error' => $activity['error']
+				));
+			}
+		}
+
+		if ($activity['override'] || $User->Password() === $activity['hash']) {
 		{
 			if (strlen($request['newpassword']) < 5 OR strlen($request['newpassword']) > 128)
 			{
@@ -399,10 +423,22 @@ elseif (API_METHOD == 'checkpassword')
 
 	if ($User->Set($request['email']))
 	{
-		$password = $Security->Hash($request['password'], 128);
-		@file_put_contents('mysql_errors.txt', "\n/checkpassword\n->" . $User->Password() . "\n", FILE_APPEND);
+		$activity = array(
+			'override' => false, 'error' => null,
+			'user' => $User, 'raw' => $request['password'],
+			'hash' => $Security->Hash($request['password'], 128));
 
-		if ($User->Password() === $password)
+		Plugins::raiseEvent("method.private.password.get.pre", $activity);
+
+		if($activity['override']) {
+			if($activity['error']) {
+				Response::Send(500, RESP_ERR, array(
+					'error' => $activity['error']
+				));
+			}
+		}
+
+		if ($activity['override'] || $User->Password() === $activity['hash']) {
 		{
 			Response::Send(200, RESP_OK, array(
 				'response' => true
@@ -626,19 +662,29 @@ elseif (API_METHOD == 'signin')
 	api_expectations(array('email', 'password'));
 	checkUser($request['email']);
 
-	$password = $Security->Hash($request['password'], 128);
+	$activity = array(
+		'override' => false, 'error' => null,
+		'user' => $User, 'raw' => $request['password'],
+		'hash' => $Security->Hash($request['password'], 128));
 
-	if ($User->Password() === $password)
-	{
+	Plugins::raiseEvent("method.private.password.get.pre", $activity);
+
+	if($activity['override']) {
+		if($activity['error']) {
+			Response::Send(500, RESP_ERR, array(
+				'error' => $activity['error']
+			));
+		}
+	}
+
+	if ($activity['override'] || $User->Password() === $activity['hash']) {
 		Response::Send(200, RESP_OK, array(
 			'response' => array(
 				'user_id'    => $User->Hash(),
 				'session_id' => $User->Session($Application->ID())
 			)
 		));
-	}
-	else
-	{
+	} else {
 		Response::Send(200, RESP_ERR, array(
 			'error' => 'The password is incorrect for this user.'
 		));
@@ -651,10 +697,22 @@ elseif (API_METHOD == 'deleteuser')
 	api_expectations(array('email', 'password'));
 	checkUser($request['email']);
 
-	$password = $Security->Hash($request['password'], 128);
+	$activity = array(
+		'override' => false, 'error' => null,
+		'user' => $User, 'raw' => $request['password'],
+		'hash' => $Security->Hash($request['password'], 128));
 
-	if ($User->Password() === $password)
-	{
+	Plugins::raiseEvent("method.private.password.get.pre", $activity);
+
+	if($activity['override']) {
+		if($activity['error']) {
+			Response::Send(500, RESP_ERR, array(
+				'error' => $activity['error']
+			));
+		}
+	}
+
+	if ($activity['override'] || $User->Password() === $activity['hash']) {
 		$User->Delete();
 
 		Response::Send(200, RESP_OK, array(
@@ -723,7 +781,7 @@ elseif (API_METHOD == 'facebook_deauthorized')
 {
 
 	// TODO
-	file_put_contents('facebook.txt', print_r($_POST, true) . "\n\n" . print_r($_GET, true) . "\n\n");
+	//file_put_contents('facebook.txt', print_r($_POST, true) . "\n\n" . print_r($_GET, true) . "\n\n");
 
 }
 elseif (API_METHOD == 'facebook_publish_action')

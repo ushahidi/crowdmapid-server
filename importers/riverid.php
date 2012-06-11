@@ -27,15 +27,17 @@
 			));
 
 			if($apiResponse->success) {
-				echo "({$user['email']}) imported successfully.<br />";
+				//echo "({$user['email']}) imported successfully.<br />";
+				echo "{$user['email']}\n";
 			} else {
-				echo "<span style='color: red; font-weight: bold'>ERROR: Import of {$user['email']} failed.</span><br />";
-				echo '<pre>' . print_r($apiResponse, true) . '</pre><br />';
+				//echo "<span style='color: red; font-weight: bold'>ERROR: Import of {$user['email']} failed.</span><br />";
+				//echo '<pre>' . print_r($apiResponse, true) . '</pre><br />';
+				echo "\n\n" . print_r($apiResponse, true);
 				exit;
 			}
 
 		} else {
-			echo "<span style='color: red; font-weight: bold'>({$user['email']}) already exists.</span><br />";
+			//echo "<span style='color: red; font-weight: bold'>({$user['email']}) already exists.</span><br />";
 		}
 
 		$userCount++;
@@ -75,12 +77,6 @@
 			$raw = curl_exec($api);
 			$resp = json_decode($raw);
 			$http_status = (int)curl_getinfo($api, CURLINFO_HTTP_CODE);
-
-			/*if( ! count($resp) || ($http_status != 400 && $http_status != 201 && $critical == true)) {
-				if(count($resp)) $raw = print_r($resp, true);
-				echo sprintf("<p>API choked on %s with %i. Response:<br /><pre>%s</pre></p>", $method, $http_status, $raw);
-				exit;
-			}*/
 
 			return $resp;
 		}
