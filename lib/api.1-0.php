@@ -380,7 +380,7 @@ elseif (API_METHOD == 'changepassword')
 			}
 		}
 
-		if ($activity['override'] || $User->Password() === $activity['hash']) {
+		if ($activity['override'] || $User->Password() === $activity['hash'])
 		{
 			if (strlen($request['newpassword']) < 5 OR strlen($request['newpassword']) > 128)
 			{
@@ -438,7 +438,7 @@ elseif (API_METHOD == 'checkpassword')
 			}
 		}
 
-		if ($activity['override'] || $User->Password() === $activity['hash']) {
+		if ($activity['override'] || $User->Password() === $activity['hash'])
 		{
 			Response::Send(200, RESP_OK, array(
 				'response' => true
