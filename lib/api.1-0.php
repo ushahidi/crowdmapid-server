@@ -389,9 +389,7 @@ elseif (API_METHOD == 'changepassword')
 				));
 			}
 
-			$request['newpassword'] = $Security->Hash($request['newpassword'], 128);
-
-			if ($request['newpassword'] === $request['oldpassword'])
+			if ($Security->Hash($request['newpassword'], 128) === $request['oldpassword'])
 			{
 				Response::Send(200, RESP_ERR, array(
 					'error' => 'You cannot reuse your password.'
@@ -569,8 +567,6 @@ elseif (API_METHOD == 'setpassword')
 						'error' => 'Please provide a password between 5 and 128 characters in length.'
 					));
 				}
-
-				$request['password'] = $Security->Hash($request['password'], 128);
 
 				// Set password.
 				$User->Password($request['password']);
