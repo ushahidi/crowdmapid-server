@@ -837,6 +837,8 @@ function checkFacebookAuthorization() {
 
 	global $Facebook, $request;
 
+	require_once(PLUGINS_DIRECTORY . 'facebook/include.php');
+
 	$Facebook = new Facebook(array(
 		'appId' => $request['fb_appid'],
 		'secret' => $request['fb_secret'],
