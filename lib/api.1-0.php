@@ -267,10 +267,8 @@ elseif (API_METHOD == 'changeemail')
 
 				// Does the application have a custom mail_from set?
 				$from = CFG_MAIL_FROM;
-				if ($Application->mailFrom())
-				{
-					$from = $Application->mailFrom();
-				}
+				if ($Application->mailFrom()) { $from = $Application->mailFrom(); }
+				if (isset($request['mailfrom']) && filter_var($request['mailfrom'], FILTER_VALIDATE_EMAIL)) { $from = $request['mailfrom']; }
 
 				// Generate a one-use token for authorizing this change.
 				$token = strtoupper($Security->randHash(32));
@@ -518,10 +516,8 @@ elseif (API_METHOD == 'requestpassword')
 
 	// Does the application have a custom mail_from set?
 	$from = CFG_MAIL_FROM;
-	if ($Application->mailFrom())
-	{
-		$from = $Application->mailFrom();
-	}
+	if ($Application->mailFrom()) { $from = $Application->mailFrom(); }
+	if (isset($request['mailfrom']) && filter_var($request['mailfrom'], FILTER_VALIDATE_EMAIL)) { $from = $request['mailfrom']; }
 
 	// Generate a one-use token for authorizing this change.
 	$token = strtoupper($Security->randHash(32));
