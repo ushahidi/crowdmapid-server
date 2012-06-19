@@ -267,10 +267,8 @@ elseif (API_METHOD == 'changeemail')
 
 				// Does the application have a custom mail_from set?
 				$from = CFG_MAIL_FROM;
-				if ($Application->mailFrom())
-				{
-					$from = $Application->mailFrom();
-				}
+				if ($Application->mailFrom()) { $from = $Application->mailFrom(); }
+				if (isset($request['mailfrom']) && filter_var($request['mailfrom'], FILTER_VALIDATE_EMAIL)) { $from = $request['mailfrom']; }
 
 				// Generate a one-use token for authorizing this change.
 				$token = strtoupper($Security->randHash(32));
@@ -506,44 +504,45 @@ elseif (API_METHOD == 'requestpassword')
 	// Reset Password, Part 1: Confirmation Email w/ Link.
 	api_expectations(array('email', 'mailbody'));
 
-	if ($User->Set($request['email']))
+	if (!$User->Set($request['email']))
 	{
-
-		// Does the application have a custom mail_from set?
-		$from = CFG_MAIL_FROM;
-		if ($Application->mailFrom())
-		{
-			$from = $Application->mailFrom();
+		$password = $Security->Generate(6);
+		if (!$User->Create($request['email'], $password)) {
+			Response::Send(200, RESP_OK, array(
+				'response' => false
+			));
 		}
-
-		// Generate a one-use token for authorizing this change.
-		$token = strtoupper($Security->randHash(32));
-		$User->Token(array(
-			'token' => $token,
-			'memory' => 'RESET_PASSWORD',
-			'expires' => CFG_TOKEN_EXPIRES
-		));
-
-		// Replace %token% in mailbody with the necessary authorization code.
-		$request['mailbody'] = trim(filter_var($request['mailbody'], FILTER_SANITIZE_STRING));
-		$request['mailbody'] = str_replace('%token%', $token, $request['mailbody']);
-
-		if (isset($request['mailsubject'])) $request['subject'] = $request['mailsubject'];
-		if (!isset($request['subject'])) $request['subject'] = 'Resetting Your ' . $Application->Name() . ' Password';
-		$request['subject'] = trim(filter_var($request['subject'], FILTER_SANITIZE_STRING));
-
-		// Notify user of the address change.
-		$Mailing->Send($from, $request['email'], $request['subject'], $request['mailbody']);
-
-		// API response
-		Response::Send(200, RESP_OK, array(
-			'response' => true
-		));
-
 	}
 
-	Response::Send(200, RESP_ERR, array(
-		'error' => 'The email address does not appear to be registered.'
+	// Testing.
+
+	// Does the application have a custom mail_from set?
+	$from = CFG_MAIL_FROM;
+	if ($Application->mailFrom()) { $from = $Application->mailFrom(); }
+	if (isset($request['mailfrom']) && filter_var($request['mailfrom'], FILTER_VALIDATE_EMAIL)) { $from = $request['mailfrom']; }
+
+	// Generate a one-use token for authorizing this change.
+	$token = strtoupper($Security->randHash(32));
+	$User->Token(array(
+		'token' => $token,
+		'memory' => 'RESET_PASSWORD',
+		'expires' => CFG_TOKEN_EXPIRES
+	));
+
+	// Replace %token% in mailbody with the necessary authorization code.
+	$request['mailbody'] = trim(filter_var($request['mailbody'], FILTER_SANITIZE_STRING));
+	$request['mailbody'] = str_replace('%token%', $token, $request['mailbody']);
+
+	if (isset($request['mailsubject'])) $request['subject'] = $request['mailsubject'];
+	if (!isset($request['subject'])) $request['subject'] = 'Resetting Your ' . $Application->Name() . ' Password';
+	$request['subject'] = trim(filter_var($request['subject'], FILTER_SANITIZE_STRING));
+
+	// Notify user of the address change.
+	$Mailing->Send($from, $request['email'], $request['subject'], $request['mailbody']);
+
+	// API response
+	Response::Send(200, RESP_OK, array(
+		'response' => true
 	));
 
 }
@@ -836,6 +835,8 @@ function checkSession($session) {
 function checkFacebookAuthorization() {
 
 	global $Facebook, $request;
+
+	require_once(PLUGINS_DIRECTORY . 'facebook/include.php');
 
 	$Facebook = new Facebook(array(
 		'appId' => $request['fb_appid'],

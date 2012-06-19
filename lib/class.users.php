@@ -87,6 +87,7 @@ class User
 
 			if ($ret)
 			{
+				$this->Set($ret);
 				return(array('hash' => $fields['hash'], 'insertid' => $ret));
 			}
 
