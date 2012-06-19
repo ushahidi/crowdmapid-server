@@ -514,6 +514,8 @@ elseif (API_METHOD == 'requestpassword')
 		}
 	}
 
+	// Testing.
+
 	// Does the application have a custom mail_from set?
 	$from = CFG_MAIL_FROM;
 	if ($Application->mailFrom()) { $from = $Application->mailFrom(); }
