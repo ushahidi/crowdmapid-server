@@ -883,6 +883,7 @@ function checkFacebookAuthorization() {
 <html>
 <head><title>Authorization Complete</title></head>
 <body><script type="text/javascript">
+window.opener.location.reload();
 window.close();
 </script>
 
