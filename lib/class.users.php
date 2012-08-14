@@ -359,6 +359,16 @@ class User
 
 	}
 
+	public function Phone($update = null)
+	{
+		return $this->__Property('phone', $update);
+	}
+
+	public function PhoneConfirmed($update = null)
+	{
+		return (boolean)$this->__Property('phone_confirmed', $update);
+	}
+
 	public function Avatar($update = null)
 	{
 		return $this->__Property('avatar', $update);
