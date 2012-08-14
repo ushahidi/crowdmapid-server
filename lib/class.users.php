@@ -6,6 +6,7 @@ class User
 {
 
 	private $data;
+	public $assigned = false;
 
 	public function Set($id)
 	{
@@ -37,7 +38,7 @@ class User
 		elseif (strpos($id, '@') !== FALSE && strpos($id, '.') !== FALSE && filter_var($id, FILTER_VALIDATE_EMAIL))
 		{
 			// Passing an email address.
-			if ($r = $MySQL->Pull("SELECT user FROM user_addresses WHERE email='{$_id}' LIMIT 1;")) {
+			if ($r = $MySQL->Pull("SELECT user FROM user_addresses WHERE LOWER(email)=LOWER('{$_id}') LIMIT 1;")) {
 				$r = $MySQL->Pull("SELECT * FROM users WHERE id='{$r['user']}' LIMIT 1;");
 			}
 		}
@@ -51,6 +52,7 @@ class User
 		{
 			Plugins::raiseEvent("user.set.succeed", $r);
 			$this->data = $r;
+			$this->assigned = true;
 			return true;
 		}
 
