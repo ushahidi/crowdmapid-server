@@ -130,6 +130,10 @@ if($api_collection == 'user') {
 
 								if($User->emailAdd($request['email'], $primary, $confirmed)) {
 									Response::Send(200, RESP_OK, array('emails' => $User->Emails()));
+								} else {
+									Response::Send(400, RESP_ERR, array(
+										'error' => 'This address has already been claimed.'
+									));
 								}
 
 							} else {
