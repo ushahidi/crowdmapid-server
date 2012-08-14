@@ -574,8 +574,10 @@ if($api_collection == 'user') {
 		}
 	}
 
-} elseif($api_collection = 'whatever') {
+//} elseif($api_collection = 'whatever') {
 
-	// Reserved for future use.
+} else {
+
+	Plugins::raiseEvent("api.collection", $struct);
 
 }

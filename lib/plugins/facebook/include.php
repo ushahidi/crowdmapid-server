@@ -23,7 +23,12 @@ class Facebook extends BaseFacebook
 		$session_var_name = $this->constructSessionVariableName($key);
 
 		global $User, $Application;
-		$User->Storage($Application->ID(), $session_var_name, $value);
+
+		if($User->assigned) {
+			$User->Storage($Application->ID(), $session_var_name, $value);
+		} else {
+			Cache::Set(REQUEST_UNIQUE_ID . '_' . $session_var_name, $value, 600);
+		}
 	}
 
 	protected function getPersistentData($key, $default = false) {
@@ -35,7 +40,13 @@ class Facebook extends BaseFacebook
 		$session_var_name = $this->constructSessionVariableName($key);
 
 		global $User, $Application;
-		$ret = $User->Storage($Application->ID(), $session_var_name);
+
+		if($User->assigned) {
+			$ret = $User->Storage($Application->ID(), $session_var_name);
+		} else {
+			$ret = Cache::Get(REQUEST_UNIQUE_ID . '_' . $session_var_name);
+		}
+
 		return ($ret) ? $ret : $default;
 	}
 
@@ -48,7 +59,11 @@ class Facebook extends BaseFacebook
 		$session_var_name = $this->constructSessionVariableName($key);
 
 		global $User, $Application;
-		$User->Storage($Application->ID(), $session_var_name, '');
+		if($User->assigned) {
+			$User->Storage($Application->ID(), $session_var_name, '');
+		} else {
+			Cache::Delete(REQUEST_UNIQUE_ID . '_' . $session_var_name);
+		}
 	}
 
 	function clearAllPersistentData() {
