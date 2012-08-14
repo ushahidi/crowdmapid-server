@@ -4,6 +4,14 @@ ob_start();
 
 // Start benchmark timer.
 define('BENCHMARK', microtime(true));
+mt_srand(BENCHMARK);
+
+// Generate a one time ID for this connection attempt.
+if(isset($_REQUEST['req_uniq_id'])) {
+	define('REQUEST_UNIQUE_ID', filter_var($_REQUEST['req_uniq_id'], FILTER_SANITIZE_STRING));
+} else {
+	define('REQUEST_UNIQUE_ID', uniqid("{$_SERVER['REMOTE_ADDR']}_", true));
+}
 
 // Ensure that libraries/modules are only loaded through safe means.
 define('LOADED_SAFELY', true);
