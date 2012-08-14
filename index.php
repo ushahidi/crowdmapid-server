@@ -236,6 +236,40 @@ function api_expectations($expected)
 	}
 }
 
+function isSessionCleared($requested = null, $critical = false)
+{
+	global $Application, $request;
+
+	   $user_id = (isset($request['user_id']) ? filter_var(substr($request['user_id'], 0, 128), FILTER_SANITIZE_STRING) : null);
+	$session_id = (isset($request['session_id']) ? filter_var(substr($request['session_id'], 0, 64), FILTER_SANITIZE_STRING) : null);
+	     $error = 'This call requires user authentication. You must provide a valid user_id and session_id.';
+
+	if($user_id && $session_id) {
+		$User = new User();
+		if($User->Set($user_id)) {
+			if($User->Session($Application->ID()) == $session_id) {
+				if($User->Admin() || $user_id == $requested) {
+					return true;
+				} else {
+					$error = 'The provided user_id or session_id is incorrect.';
+				}
+			} else {
+				$error = 'The provided user_id or session_id is incorrect.';
+			}
+		} else {
+			$error = 'The provided user_id or session_id is incorrect.';
+		}
+	}
+
+	if($critical) {
+		Response::Send(400, RESP_ERR, array(
+			'error' => $error
+		));
+	} else {
+		return false;
+	}
+}
+
 function array_keys_exist($array, $search)
 {
 	Plugins::raiseEvent("core.array_keys_exist", array($array, $search));
