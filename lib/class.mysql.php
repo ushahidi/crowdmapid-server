@@ -7,8 +7,10 @@ class MySQL
 
 	private $link;
 
-	public function __construct()
+	public function Connect()
 	{
+		if($this->link) return true;
+
 		$this->link = @mysql_connect(CFG_SQL_HOST, CFG_SQL_USER, CFG_SQL_PASSWORD);
 
 		if ($this->link)
@@ -26,6 +28,8 @@ class MySQL
 
 	public function Pull($statement)
 	{
+		$this->Connect();
+
 		$result = @mysql_query($statement, $this->link);
 		if ( !$result )
 		{
@@ -52,6 +56,8 @@ class MySQL
 
 	public function Push($statement)
 	{
+		$this->Connect();
+
 		$result = @mysql_unbuffered_query($statement, $this->link);
 		if ( !$result )
 		{
@@ -71,6 +77,8 @@ class MySQL
 
 	public function Clean($string)
 	{
+		$this->Connect();
+
 		// Prepare a string for use in a statement.
 		if ( function_exists('mysql_real_escape_string') )
 		{
