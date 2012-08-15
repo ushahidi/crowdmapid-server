@@ -49,6 +49,8 @@ if($api_collection == 'user') {
 
 					} elseif(HTTP_METHOD == 'PUT') {
 
+						isSessionCleared($User->Hash(), true);
+
 						// Make the specified address the new master address for the account.
 						if($User->Set($api_user)) {
 
@@ -78,6 +80,8 @@ if($api_collection == 'user') {
 
 					} elseif(HTTP_METHOD == 'DELETE') {
 
+						isSessionCleared($User->Hash(), true);
+
 						// Delete the specified email address from the account.
 						if($User->Set($api_user)) {
 
@@ -100,6 +104,8 @@ if($api_collection == 'user') {
 					}
 
 				} else { // /user/:user_id/email
+
+					isSessionCleared($User->Hash(), true);
 
 					if(HTTP_METHOD == 'GET') {
 
@@ -130,6 +136,10 @@ if($api_collection == 'user') {
 
 								if($User->emailAdd($request['email'], $primary, $confirmed)) {
 									Response::Send(200, RESP_OK, array('emails' => $User->Emails()));
+								} else {
+									Response::Send(400, RESP_ERR, array(
+										'error' => 'This address has already been claimed.'
+									));
 								}
 
 							} else {
@@ -192,6 +202,8 @@ if($api_collection == 'user') {
 
 				} elseif(HTTP_METHOD == 'POST' || HTTP_METHOD == 'PUT') {
 
+					isSessionCleared($User->Hash(), true);
+
 					api_expectations(array('password'));
 
 					if (strlen($request['password']) < 5 || strlen($request['password']) > 128) {
@@ -223,10 +235,76 @@ if($api_collection == 'user') {
 
 				} elseif(HTTP_METHOD == 'POST' || HTTP_METHOD == 'PUT') {
 
+					isSessionCleared($User->Hash(), true);
+
 					api_expectations(array('avatar'));
 
 					$User->Avatar($request['avatar']);
 					Response::Send(200, RESP_OK, array());
+
+				}
+
+			} elseif($api_action == 'phone') { // /user/:user_id/phone
+
+				isSessionCleared($User->Hash(), true);
+
+				require './lib/twilio/Twilio.php';
+				$twilio = new Services_Twilio(CFG_TWILIO_ID, CFG_TWILIO_TOKEN);
+
+				$phone = substr(trim(str_replace(array('+', '-'), '', filter_var($request['phone'], FILTER_SANITIZE_NUMBER_INT))), 0, 50);
+
+				if(HTTP_METHOD == 'POST' && $api_action_value == 'confirm' && !$User->PhoneConfirmed()) {
+
+					api_expectations(array('phone', 'code'));
+					$submitted = strtoupper(substr(trim(filter_var($request['code'], FILTER_SANITIZE_STRING)), 0, 6));
+					$code = strtoupper($Security->Hash("CONFIRM_PHONE_" . $User->Hash() . "_{$phone}", 6));
+
+					if($submitted === $code) {
+						$User->PhoneConfirmed(1);
+						Response::Send(200, RESP_OK, array());
+					} else {
+						Response::Send(500, RESP_ERR, array(
+							'error' => 'That confirmation code is incorrect.'
+						));
+					}
+
+				} else {
+
+					if(HTTP_METHOD == 'GET') {
+
+						$avatar = $User->Phone();
+
+						Response::Send(200, RESP_OK, array(
+							'phone' => $User->Phone(),
+							'confirmed' => $User->PhoneConfirmed()
+						));
+
+					} elseif(HTTP_METHOD == 'POST') {
+
+						global $MySQL;
+
+						if(strlen($phone)) {
+							if($dup = $MySQL->Pull("SELECT phone FROM users WHERE phone='" . $MySQL->Clean($phone) . "' AND phone_confirmed=1 LIMIT 1;")) {
+								Response::Send(500, RESP_ERR, array(
+									'error' => 'That phone number has already been claimed by another user.'
+								));
+							}
+						}
+
+						if($phone != $User->Phone()) {
+							api_expectations(array('phone'));
+							$User->Phone($phone);
+							$User->PhoneConfirmed(0);
+
+							if(strlen($phone)) {
+								$code = $Security->Hash("CONFIRM_PHONE_" . $User->Hash() . "_{$phone}", 6);
+								$message = $twilio->account->sms_messages->create( CFG_TWILIO_NUMBER, $phone, "To confirm your phone number with CrowdmapID, please enter this code: " . $code);
+							}
+						}
+
+						Response::Send(200, RESP_OK, array());
+
+					}
 
 				}
 
@@ -246,6 +324,8 @@ if($api_collection == 'user') {
 
 					} else {
 
+						isSessionCleared($User->Hash(), true);
+
 						// Return current session hash.
 						Response::Send(200, RESP_OK, array(
 							'session' => $User->Session($Application->ID())
@@ -254,6 +334,8 @@ if($api_collection == 'user') {
 					}
 
 				} elseif(HTTP_METHOD == 'POST') {
+
+					isSessionCleared($User->Hash(), true);
 
 					// Sending a POST to /session will generate a new app session hash.
 					$session = $User->Sessions($Application->ID(), $api_action_value);
@@ -267,6 +349,8 @@ if($api_collection == 'user') {
 					}
 
 				} elseif(HTTP_METHOD == 'PUT') {
+
+					isSessionCleared($User->Hash(), true);
 
 					// Refresh/extend the expiration date on a session.
 					if($session = $User->Session($Application->ID(), TRUE)) {
@@ -291,11 +375,15 @@ if($api_collection == 'user') {
 
 					} elseif(HTTP_METHOD == 'DELETE') {
 
+						isSessionCleared($User->Hash(), true);
+
 						Response::Send(200, RESP_OK, array(
 							'badge' => $User->Badge($Application->ID(), $api_action_value, 'DELETE')
 						));
 
 					} elseif(HTTP_METHOD == 'PUT') {
+
+						isSessionCleared($User->Hash(), true);
 
 						api_expectations(array('title','description','graphic','url','category'));
 
@@ -323,6 +411,8 @@ if($api_collection == 'user') {
 
 					} elseif(HTTP_METHOD == 'POST') {
 
+						isSessionCleared($User->Hash(), true);
+
 						api_expectations(array('badge','title','description','graphic','url','category'));
 
 						$User->Badge($Application->ID(), $request['badge'], array(
@@ -340,6 +430,8 @@ if($api_collection == 'user') {
 				}
 
 			} elseif($api_action == 'store') { // /user/:user_id/store
+
+				isSessionCleared($User->Hash(), true);
 
 				if($api_action_value) {
 
@@ -399,6 +491,8 @@ if($api_collection == 'user') {
 
 					} elseif(HTTP_METHOD == 'POST' OR HTTP_METHOD == 'PUT') {
 
+						isSessionCleared($User->Hash(), true);
+
 						api_expectations(array('question'));
 
 						if(isset($request['question']) && strlen($request['question'])) {
@@ -424,6 +518,7 @@ if($api_collection == 'user') {
 
 				} elseif($api_action_value == 'answer') {
 
+					isSessionCleared($User->Hash(), true);
 					api_expectations(array('answer'));
 
 					if(HTTP_METHOD == 'POST' OR HTTP_METHOD == 'PUT') {
@@ -461,22 +556,41 @@ if($api_collection == 'user') {
 				$avatar = $User->Avatar();
 				if(!$avatar) $avatar = 'http://www.gravatar.com/avatar/' . md5(strtolower(trim($User->Email())));
 
-				// Get information about user.
-				Response::Send(200, RESP_OK, array(
-					'user' => array(
-						'user_id'                     => $User->Hash(),
-						'session_id'                  => $User->Session($Application->ID()),
-						'registered'                  => $User->Registered(),
-						'password_last_changed'       => $User->passwordChanged(),
-						'password_challenge_question' => $User->Question(),
-						'avatar'                      => $avatar,
-						'emails'                      => $User->Emails(),
-						'badges'                      => $User->Badges($Application->ID(), true),
-						'storage'                     => $User->Storage($Application->ID())
-					)
-				));
+				if(isSessionCleared($User->Hash())) {
+					// Get information about user.
+					Response::Send(200, RESP_OK, array(
+						'user' => array(
+							'user_index'                  => $User->ID(),
+							'user_id'                     => $User->Hash(),
+							'session_id'                  => $User->Session($Application->ID()),
+							'registered'                  => $User->Registered(),
+							'password_last_changed'       => $User->passwordChanged(),
+							'password_challenge_question' => $User->Question(),
+							'avatar'                      => $avatar,
+							'emails'                      => $User->Emails(),
+							'phone'                       => array(
+							                              'number' => $User->Phone(),
+							                              'confirmed' => (boolean)$User->PhoneConfirmed()),
+							'badges'                      => $User->Badges($Application->ID(), true),
+							'storage'                     => $User->Storage($Application->ID())
+						)
+					));
+				} else {
+					// Get information about user.
+					Response::Send(200, RESP_OK, array(
+						'user' => array(
+							'user_index'                  => $User->ID(),
+							'user_id'                     => $User->Hash(),
+							'registered'                  => $User->Registered(),
+							'avatar'                      => $avatar,
+							'badges'                      => $User->Badges($Application->ID(), true)
+						)
+					));
+				}
 
 			} elseif(HTTP_METHOD == 'DELETE') {
+
+				isSessionCleared($User->Hash(), true);
 
 				if($Application->adminAccess()) {
 
@@ -501,6 +615,8 @@ if($api_collection == 'user') {
 	} else {
 
 		if(HTTP_METHOD == 'GET') {
+
+			isSessionCleared($User->Hash(), true);
 
 			if($Application->adminAccess()) {
 
@@ -573,8 +689,6 @@ if($api_collection == 'user') {
 
 		}
 	}
-
-//} elseif($api_collection = 'whatever') {
 
 } else {
 

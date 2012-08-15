@@ -110,7 +110,7 @@ class Response {
 		$resp = array();
 		$resp['success'] = (bool)$success;
 
-		if(defined('API_METHOD')) {
+		if(defined('API_METHOD') && API_METHOD) {
 			$resp['method'] = API_METHOD;
 		}
 
@@ -131,7 +131,7 @@ class Response {
 
 			$request = array_filter($request);
 
-			if(count($request)) $resp['request'] = (object) $request;
+			//if(count($request)) $resp['request'] = (object) $request;
 		}
 
 		$resp = array_merge($resp, $data);
