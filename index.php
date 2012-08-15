@@ -96,7 +96,7 @@ else
 	if( ! Plugins::raiseEvent("core.breakdown_request_method")) {
 		// Request method unsupported.
 		Response::Send(501, RESP_ERR, array(
-			'error' => 'Unsupported request method used. GET and POST, PUT and DELETE are supported.'
+			'error' => 'Unsupported request method used. GET, POST, PUT and DELETE are supported.'
 		));
 	}
 }
@@ -198,7 +198,7 @@ if (defined('API_METHOD'))
 }
 
 if ( ! Plugins::raiseEvent("method.no_matches")) {
-	Response::Send(400, RESP_ERR, array(
+	Response::Send(404, RESP_ERR, array(
 		'error' => 'No supported API methods were invoked.'
 	));
 }
