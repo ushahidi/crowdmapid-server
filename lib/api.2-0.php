@@ -298,7 +298,7 @@ if($api_collection == 'user') {
 
 							if(strlen($phone)) {
 								$code = $Security->Hash("CONFIRM_PHONE_" . $User->Hash() . "_{$phone}", 6);
-								$message = $twilio->account->sms_messages->create( CFG_TWILIO_NUMBER, $phone, "To confirm your phone number with CrowdmapID, please enter this code: " . $code);
+								$message = $twilio->account->sms_messages->create( CFG_TWILIO_NUMBER, $phone, "To confirm your phone number with " . $Application->Name() . ", please enter this code: " . $code);
 							}
 						}
 
