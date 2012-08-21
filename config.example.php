@@ -45,6 +45,11 @@ define(  'CFG_USE_SENDGRID',  false );
 define( 'CFG_SENDGRID_USER',  '' );
 define(  'CFG_SENDGRID_KEY',  '' );
 
+// Enable Twilio API for phone/SMS methods:
+define('CFG_TWILIO_NUMBER',  '' );
+define(    'CFG_TWILIO_ID',  '' );
+define( 'CFG_TWILIO_TOKEN',  '' );
+
 // If you're going to use the optional Yubikey plugin, uncomment these.
 // These can be generated at https://upgrade.yubico.com/getapikey/
 //define('YUBIKEY_CLIENT_ID', 0);
