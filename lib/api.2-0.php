@@ -248,63 +248,73 @@ if($api_collection == 'user') {
 
 				isSessionCleared($User->Hash(), true);
 
-				require './lib/twilio/Twilio.php';
-				$twilio = new Services_Twilio(CFG_TWILIO_ID, CFG_TWILIO_TOKEN);
+				if(defined('CFG_TWILIO_NUMBER') && strlen(CFG_TWILIO_NUMBER) &&
+				  (defined('CFG_TWILIO_ID') && strlen(CFG_TWILIO_ID) &&
+				  (defined('CFG_TWILIO_TOKEN') && strlen(CFG_TWILIO_TOKEN)) {
 
-				$phone = substr(trim(str_replace(array('+', '-'), '', filter_var($request['phone'], FILTER_SANITIZE_NUMBER_INT))), 0, 50);
+					require './lib/twilio/Twilio.php';
+					$twilio = new Services_Twilio(CFG_TWILIO_ID, CFG_TWILIO_TOKEN);
 
-				if(HTTP_METHOD == 'POST' && $api_action_value == 'confirm' && !$User->PhoneConfirmed()) {
+					$phone = substr(trim(str_replace(array('+', '-'), '', filter_var($request['phone'], FILTER_SANITIZE_NUMBER_INT))), 0, 50);
 
-					api_expectations(array('phone', 'code'));
-					$submitted = strtoupper(substr(trim(filter_var($request['code'], FILTER_SANITIZE_STRING)), 0, 6));
-					$code = strtoupper($Security->Hash("CONFIRM_PHONE_" . $User->Hash() . "_{$phone}", 6));
+					if(HTTP_METHOD == 'POST' && $api_action_value == 'confirm' && !$User->PhoneConfirmed()) {
 
-					if($submitted === $code) {
-						$User->PhoneConfirmed(1);
-						Response::Send(200, RESP_OK, array());
+						api_expectations(array('phone', 'code'));
+						$submitted = strtoupper(substr(trim(filter_var($request['code'], FILTER_SANITIZE_STRING)), 0, 6));
+						$code = strtoupper($Security->Hash("CONFIRM_PHONE_" . $User->Hash() . "_{$phone}", 6));
+
+						if($submitted === $code) {
+							$User->PhoneConfirmed(1);
+							Response::Send(200, RESP_OK, array());
+						} else {
+							Response::Send(500, RESP_ERR, array(
+								'error' => 'That confirmation code is incorrect.'
+							));
+						}
+
 					} else {
-						Response::Send(500, RESP_ERR, array(
-							'error' => 'That confirmation code is incorrect.'
-						));
+
+						if(HTTP_METHOD == 'GET') {
+
+							$avatar = $User->Phone();
+
+							Response::Send(200, RESP_OK, array(
+								'phone' => $User->Phone(),
+								'confirmed' => $User->PhoneConfirmed()
+							));
+
+						} elseif(HTTP_METHOD == 'POST') {
+
+							global $MySQL;
+
+							if(strlen($phone)) {
+								if($dup = $MySQL->Pull("SELECT phone FROM users WHERE phone='" . $MySQL->Clean($phone) . "' AND phone_confirmed=1 LIMIT 1;")) {
+									Response::Send(500, RESP_ERR, array(
+										'error' => 'That phone number has already been claimed by another user.'
+									));
+								}
+							}
+
+							if($phone != $User->Phone()) {
+								api_expectations(array('phone'));
+								$User->Phone($phone);
+								$User->PhoneConfirmed(0);
+
+								if(strlen($phone)) {
+									$code = $Security->Hash("CONFIRM_PHONE_" . $User->Hash() . "_{$phone}", 6);
+									$message = $twilio->account->sms_messages->create( CFG_TWILIO_NUMBER, $phone, "To confirm your phone number with " . $Application->Name() . ", please enter this code: " . $code);
+								}
+							}
+
+							Response::Send(200, RESP_OK, array());
+
+						}
+
 					}
 
 				} else {
 
-					if(HTTP_METHOD == 'GET') {
-
-						$avatar = $User->Phone();
-
-						Response::Send(200, RESP_OK, array(
-							'phone' => $User->Phone(),
-							'confirmed' => $User->PhoneConfirmed()
-						));
-
-					} elseif(HTTP_METHOD == 'POST') {
-
-						global $MySQL;
-
-						if(strlen($phone)) {
-							if($dup = $MySQL->Pull("SELECT phone FROM users WHERE phone='" . $MySQL->Clean($phone) . "' AND phone_confirmed=1 LIMIT 1;")) {
-								Response::Send(500, RESP_ERR, array(
-									'error' => 'That phone number has already been claimed by another user.'
-								));
-							}
-						}
-
-						if($phone != $User->Phone()) {
-							api_expectations(array('phone'));
-							$User->Phone($phone);
-							$User->PhoneConfirmed(0);
-
-							if(strlen($phone)) {
-								$code = $Security->Hash("CONFIRM_PHONE_" . $User->Hash() . "_{$phone}", 6);
-								$message = $twilio->account->sms_messages->create( CFG_TWILIO_NUMBER, $phone, "To confirm your phone number with CrowdmapID, please enter this code: " . $code);
-							}
-						}
-
-						Response::Send(200, RESP_OK, array());
-
-					}
+					Response::Send(404, RESP_ERR, array('error' => 'Phone support is not enabled on this installation.'));
 
 				}
 

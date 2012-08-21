@@ -44,8 +44,12 @@ class User
 		}
 		elseif (is_numeric($id))
 		{
-			// Passing a record id.
-			$r = $MySQL->Pull("SELECT * FROM users WHERE id={$_id} LIMIT 1;");
+			if($r = $MySQL->Pull("SELECT * FROM users WHERE phone='{$_id}' AND phone_confirmed=1 LIMIT 1;")) {
+				// We'll probably want to do something here.
+			} else {
+				// Passing a record id.
+				$r = $MySQL->Pull("SELECT * FROM users WHERE id={$_id} LIMIT 1;");
+			}
 		}
 
 		if ($r && isset($r['id']))

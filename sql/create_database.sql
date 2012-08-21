@@ -61,6 +61,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   `hash` char(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   `password` char(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   `password_changed` timestamp NULL DEFAULT NULL,
+  `phone` varchar(50) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `phone_confirmed` tinyint(1) unsigned DEFAULT '0',
   `question` varchar(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `answer` char(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `token` char(32) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '',
@@ -181,8 +183,8 @@ ALTER TABLE `user_storage`
 DELIMITER $$
 CREATE EVENT `application_hits_cleanup` ON SCHEDULE EVERY 1 MINUTE STARTS '2012-01-01 00:00:00' ON COMPLETION PRESERVE ENABLE DO DELETE FROM application_hits WHERE expires < NOW()$$
 
-CREATE EVENT `users_tokens_cleanup` ON SCHEDULE EVERY 5 MINUTE STARTS '2012-01-01 00:00:00' ON COMPLETION PRESERVE ENABLE DO UPDATE users 
-SET token = '', token_memory = '', token_expires = NULL 
+CREATE EVENT `users_tokens_cleanup` ON SCHEDULE EVERY 5 MINUTE STARTS '2012-01-01 00:00:00' ON COMPLETION PRESERVE ENABLE DO UPDATE users
+SET token = '', token_memory = '', token_expires = NULL
 WHERE expires IS NOT NULL AND expires < NOW()$$
 
 CREATE EVENT `user_sessions_cleanup` ON SCHEDULE EVERY 5 MINUTE STARTS '2012-01-01 00:00:00' ON COMPLETION PRESERVE ENABLE DO DELETE FROM user_sessions WHERE expires IS NOT NULL AND expire < NOW()$$
