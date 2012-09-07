@@ -249,8 +249,8 @@ if($api_collection == 'user') {
 				isSessionCleared($User->Hash(), true);
 
 				if(defined('CFG_TWILIO_NUMBER') && strlen(CFG_TWILIO_NUMBER) &&
-				  (defined('CFG_TWILIO_ID') && strlen(CFG_TWILIO_ID) &&
-				  (defined('CFG_TWILIO_TOKEN') && strlen(CFG_TWILIO_TOKEN)) {
+				   defined('CFG_TWILIO_ID') && strlen(CFG_TWILIO_ID) &&
+				   defined('CFG_TWILIO_TOKEN') && strlen(CFG_TWILIO_TOKEN)) {
 
 					require './lib/twilio/Twilio.php';
 					$twilio = new Services_Twilio(CFG_TWILIO_ID, CFG_TWILIO_TOKEN);

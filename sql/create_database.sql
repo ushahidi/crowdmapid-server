@@ -153,6 +153,10 @@ CREATE TABLE IF NOT EXISTS `user_storage` (
   KEY `storage_public` (`storage_public`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='A simple key-value store for user accounts.';
 
+CREATE TABLE `password_blacklist` (
+  `password` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '',
+  PRIMARY KEY (`password`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 ALTER TABLE `application_hits`
   ADD CONSTRAINT `application_hits_ibfk_1` FOREIGN KEY (`application`) REFERENCES `applications` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
