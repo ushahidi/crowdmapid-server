@@ -18,7 +18,7 @@ CrowdmapID currently supports the v1.0 API, which is backwards compatible with R
 ```sql
 INSERT INTO `applications` (`id`, `name`, `url`, `secret`, `ratelimit`, `mail_from`, `note`, `admin_email`, `admin_identity`, `debug`, `registered`, `admin_access`)
 VALUES
-	(1, 'App Name', 'https://appurl.com', 'B07E6009296E90C0ABE480B828241212300172B10CA60B8B0063BAD56C1B2222', 0, 'some@email.com', '', 'some@email.com', 'Some Company Name', 0, NOW(), 0);
+	(1, 'App Name', 'https://appurl.com', 'B07E6009296E90C0ABE480B828241212300172B10CA60B8B0063BAD56C1B2222', 0, 'some@email.com', '', 'some@email.com', 'Some Company Name', 0, NOW(), 1);
 ```
 The important field here is the secret key. Once this is in the table, you can hit your new API. Example URL: http://newapisiteurl.com/?api_secret=B07E6009296E90C0ABE480B828241212300172B10CA60B8B0063BAD56C1B2222
 
