@@ -94,7 +94,7 @@ class Response {
 		}
 
 		header("HTTP/1.1 {$code} {$status}");
-		header('Content-Type: text/javascript');
+		header('Content-type: application/json');
 
 		header("Access-Control-Allow-Origin: *");
 		header("Access-Control-Allow-Headers: Authorization, X-Requested-With");
@@ -139,8 +139,6 @@ class Response {
 		if(defined('BENCHMARK')) {
 			$resp['benchmark'] = round((microtime(true) - BENCHMARK), 4);
 		}
-
-		header('Content-type: application/json');
 
 		$resp = json_encode($resp);
 		if($callback) $resp = "{$callback}({$resp})";
