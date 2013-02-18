@@ -140,6 +140,8 @@ class Response {
 			$resp['benchmark'] = round((microtime(true) - BENCHMARK), 4);
 		}
 
+		header('Content-type: application/json');
+
 		$resp = json_encode($resp);
 		if($callback) $resp = "{$callback}({$resp})";
 		echo $resp;
