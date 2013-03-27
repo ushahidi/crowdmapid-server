@@ -157,6 +157,81 @@ if($api_collection == 'user') {
 
 				}
 
+			} elseif($api_action == 'recover') { // /user/:user_id/recover
+
+				$from = CFG_MAIL_FROM;
+				if ($Application->mailFrom()) { $from = $Application->mailFrom(); }
+				if (isset($request['mailfrom']) && filter_var($request['mailfrom'], FILTER_VALIDATE_EMAIL)) { $from = $request['mailfrom']; }
+
+				if(HTTP_METHOD == 'GET') {
+
+					api_expectations(array('token', 'mailbody'));
+
+					$userToken = $User->Token();
+
+					if($request['token'] == $userToken['token']) {
+
+						if ($userToken['expires'] > time()) {
+
+							// Generate a new, random password.
+							$password = $Security->randHash(16);
+
+							// Replace %password% in mailbody with the necessary authorization code.
+							$request['mailbody'] = trim(filter_var($request['mailbody'], FILTER_SANITIZE_STRING));
+							$request['mailbody'] = str_replace('%password%', $password, $request['mailbody']);
+
+							if (isset($request['mailsubject'])) $request['subject'] = $request['mailsubject'];
+							if (!isset($request['subject'])) $request['subject'] = 'Your New ' . $Application->Name() . ' Password';
+							$request['subject'] = trim(filter_var($request['subject'], FILTER_SANITIZE_STRING));
+
+							$User->Password($password); // Set password.
+							$User->ClearToken(); // Reset token/memory.
+
+							// Notify user of their new, temporary password.
+							$Mailing->Send($from, $User->Email(), $request['subject'], $request['mailbody']);
+
+							// API response
+							Response::Send(200, RESP_OK, array(
+								'response' => true
+							));
+
+						} else {
+							Response::Send(403, RESP_ERR, array('error' => 'That recovery token has expired.'));
+						}
+
+					} else {
+						Response::Send(403, RESP_ERR, array('error' => 'That recovery token is not valid.'));
+					}
+
+				} elseif(HTTP_METHOD == 'POST') { // REQUEST RESET
+
+					api_expectations(array('mailbody'));
+
+					$token = strtoupper($Security->randHash(16));
+					$User->Token(array(
+						'token' => $token,
+						'memory' => 'RESET_PASSWORD',
+						'expires' => CFG_TOKEN_EXPIRES
+					));
+
+					// Replace %token% in mailbody with the necessary authorization code.
+					$request['mailbody'] = trim(filter_var($request['mailbody'], FILTER_SANITIZE_STRING));
+					$request['mailbody'] = str_replace('%token%', $token, $request['mailbody']);
+
+					if (isset($request['mailsubject'])) $request['subject'] = $request['mailsubject'];
+					if (!isset($request['subject'])) $request['subject'] = 'Resetting Your ' . $Application->Name() . ' Password';
+					$request['subject'] = trim(filter_var($request['subject'], FILTER_SANITIZE_STRING));
+
+					// Notify user of the address change.
+					$Mailing->Send($from, $User->Email(), $request['subject'], $request['mailbody']);
+
+					// API response
+					Response::Send(200, RESP_OK, array(
+						'response' => true
+					));
+
+				}
+
 			} elseif($api_action == 'password') { // /user/:user_id/password
 
 				if(HTTP_METHOD == 'GET') {
@@ -227,7 +302,7 @@ if($api_collection == 'user') {
 				if(HTTP_METHOD == 'GET') {
 
 					$avatar = $User->Avatar();
-					if(!$avatar) $avatar = 'http://www.gravatar.com/avatar/' . md5(strtolower(trim($User->Email())));
+					if(!$avatar) $avatar = 'http://www.gravatar.com/avatar/' . md5(strtolower(trim($User->Email()))) . '?s=200&d=404';
 
 					Response::Send(200, RESP_OK, array(
 						'avatar' => $avatar

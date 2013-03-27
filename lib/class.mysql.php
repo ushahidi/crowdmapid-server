@@ -1,6 +1,13 @@
-<?php
+<?php defined('LOADED_SAFELY') or die('You cannot access this file directly.');
 
-if(!defined('LOADED_SAFELY')) die('You cannot access this file directly.');
+/**
+ * CrowdmapID Database Management Class
+ *
+ * @package    CrowdmapID
+ * @author     Ushahidi Team <team@ushahidi.com>
+ * @copyright  Ushahidi - http://www.ushahidi.com
+ * @license    http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL)
+ */
 
 class MySQL
 {

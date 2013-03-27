@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * CrowdmapID Apigee Support Library
+ *
+ * @package    CrowdmapID
+ * @author     Ushahidi Team <team@ushahidi.com>
+ * @copyright  Ushahidi - http://www.ushahidi.com
+ * @license    http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL)
+ */
+
 if(!defined('LOADED_SAFELY')) die('You cannot access this file directly.');
 
 class Apigee {
