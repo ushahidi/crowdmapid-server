@@ -382,7 +382,43 @@ class User
 
 	public function Avatar($update = null)
 	{
-		return $this->__Property('avatar', $update);
+		$avatar = $this->__Property('avatar', $update);
+
+		if(!$avatar) {
+			$avatar = 'http://www.gravatar.com/avatar/' . md5(strtolower(trim($this->Email()))) . '?r=PG&s=200&d=404';
+
+			$gravatar = curl_init();
+			curl_setopt_array($gravatar, array(
+				CURLOPT_URL            => $avatar,
+				CURLOPT_HEADER         => TRUE,
+				CURLOPT_NOBODY         => TRUE,
+				CURLOPT_RETURNTRANSFER => TRUE,
+				CURLOPT_SSL_VERIFYPEER => FALSE,
+				CURLOPT_FOLLOWLOCATION => TRUE,
+				CURLOPT_MAXREDIRS      => 10,
+				CURLOPT_AUTOREFERER    => TRUE,
+				CURLOPT_CONNECTTIMEOUT => 5,
+				CURLOPT_TIMEOUT        => 5
+			));
+
+			$r = array();
+			$r['body']   = curl_exec($gravatar);
+			$r['header'] = curl_getinfo($gravatar);
+			$r['error']  = curl_errno($gravatar);
+			curl_close($gravatar);
+
+			if(!$r['error']) {
+				if(isset($r['header']['http_code']) && isset($r['header']['content_type'])) {
+					if($r['header']['http_code'] == 200 && substr($r['header']['content_type'], 0, 6) == "image/") {
+						return $avatar;
+					}
+				}
+			}
+
+			return NULL;
+		}
+
+		return $avatar;
 	}
 
 	public function Question($update = null)
