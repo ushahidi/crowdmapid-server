@@ -302,7 +302,7 @@ if($api_collection == 'user') {
 				if(HTTP_METHOD == 'GET') {
 
 					$avatar = $User->Avatar();
-					if(!$avatar) $avatar = 'http://www.gravatar.com/avatar/' . md5(strtolower(trim($User->Email()))) . '?s=200&d=404';
+					if(!$avatar) $avatar = 'http://www.gravatar.com/avatar/' . md5(strtolower(trim($User->Email()))) . '?r=PG&s=200&d=404';
 
 					Response::Send(200, RESP_OK, array(
 						'avatar' => $avatar
@@ -639,7 +639,7 @@ if($api_collection == 'user') {
 			if(HTTP_METHOD == 'GET') {
 
 				$avatar = $User->Avatar();
-				if(!$avatar) $avatar = 'http://www.gravatar.com/avatar/' . md5(strtolower(trim($User->Email())));
+				if(!$avatar) $avatar = 'http://www.gravatar.com/avatar/' . md5(strtolower(trim($User->Email()))) . '?r=PG&s=200&d=404';
 
 				if(isSessionCleared($User->Hash())) {
 					// Get information about user.
