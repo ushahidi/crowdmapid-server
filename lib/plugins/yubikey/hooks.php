@@ -97,10 +97,11 @@ Plugins::registerEvent("method.private.password.get.pre", function(&$activity) {
 
 Plugins::registerEvent("method.security", function($struct) {
 
+	global $User;
 	isSessionCleared($User->Hash(), true);
 
 	if ($struct[3] == 'yubikey') {
-		global $User, $Application, $request;
+		global $Application, $request;
 
 		if(HTTP_METHOD == 'GET') {
 			if($identity = $User->Storage($Application->ID(), 'yubikey_paired', null, true)) {
