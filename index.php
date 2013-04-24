@@ -239,7 +239,7 @@ function api_expectations($expected)
 		if ( ! isset($request[$e]))
 		{
 			Response::Send(400, RESP_ERR, array(
-				'error' => 'JSON parameter missing. Expected: ' . implode(',', $expected)
+				'error' => 'Request did not include required parameters: ' . implode(',', $expected)
 			));
 		}
 	}

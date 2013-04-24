@@ -9,7 +9,15 @@
  * @license    http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL)
  */
 
+if (defined('YUBIKEY_CLIENT_ID') && defined('YUBIKEY_CLIENT_KEY') && !defined('SUPPORTS_TWO_FACTOR')) {
+	define('SUPPORTS_TWO_FACTOR', TRUE);
+	define('PLUGIN_YUBIKEY', TRUE);
+}
+
 Plugins::registerEvent("method.private.password.get.pre", function(&$activity) {
+
+	// Don't process if another plugin has already raised an error.
+	if($activity['error']) return;
 
 	// Is Yubikey support enabled?
 	if (!defined('YUBIKEY_CLIENT_ID') || !defined('YUBIKEY_CLIENT_KEY')) return;
@@ -19,19 +27,23 @@ Plugins::registerEvent("method.private.password.get.pre", function(&$activity) {
 	// Does the user have a Yubikey paired?
 	if($identity = $User->Storage($Application->ID(), 'yubikey_paired', null, true)) {
 
-		// They do. Override standard password functionality.
+		// They do. Augment the authentication check.
 		$activity['override'] = true;
 
-		// Get the incoming key's identity, if it is infact a Yubikey.
-		$incoming_identity = yubikeyGetIdentity($activity['raw']);
+		$otp = (isset($_REQUEST['otp']) ? trim($_REQUEST['otp']) : FALSE);
 
+		// Get the paired identity if the OTP provided is valid
+		$incoming_identity = yubikeyGetIdentity($otp);
+
+		// An invalid OTP was provided
 		if(!$incoming_identity) {
-			$activity['error'] = 'This account requires a valid Yubikey to sign in.';
+			$activity['error'] = 'Please provide a valid one-time password.';
 			return;
 		}
 
+		// The OTP's issuing device is paired with a different account.
 		if($incoming_identity != $identity) {
-			$activity['error'] = 'That Yubikey is not paired with this account.';
+			$activity['error'] = 'That device is not paired with this account.';
 			return;
 		}
 
@@ -76,19 +88,32 @@ Plugins::registerEvent("method.private.password.get.pre", function(&$activity) {
 
 			if ($yubikey['nonce'] != $nonce) {
 				$activity['error'] = 'The Yubico server responded in a suspicious manner. Try again later.';
+				return;
+
 			//} elseif ($yubikey['h'] != $nonce) { // TODO
+
 			} elseif ($yubikey['status'] == 'REPLAYED_OTP') {
-				$activity['error'] = 'That Yubikey passcode has already been used. Please generate another and try again.';
+				$activity['error'] = 'That Yubikey OTP has already been used. Please generate another.';
+				return;
+
 			} elseif ($yubikey['status'] == 'BAD_OTP') {
-				$activity['error'] = 'That Yubikey passcode does not appeara to be valid. Please generate another and try again.';
+				$activity['error'] = 'That Yubikey OTP is not valid. Please try again.';
+				return;
+
 			} elseif ($yubikey['status'] == 'OK') {
 				// We're gold.
+				return true;
+
 			} else {
-				$activity['error'] = 'We are experiencing difficulties verifying your Yubikey with Yubico. Please try again shortly.';
+				$activity['error'] = 'We are experiencing difficulties verifying your Yubikey. Please try again shortly.';
+				return;
+
 			}
 
 		} else {
-			$activity['error'] = 'We are experiencing difficulties verifying your Yubikey with Yubico. Please try again shortly.';
+			$activity['error'] = 'We are experiencing difficulties verifying your Yubikey. Please try again shortly.';
+			return;
+
 		}
 
 	}
@@ -124,7 +149,7 @@ Plugins::registerEvent("method.security", function($struct) {
 
 				if(!$identity) {
 					Response::Send(500, RESP_ERR, array(
-						'error' => 'That doesn\'t appear to be a valid Yubikey.'
+						'error' => 'That is not a recognizable Yubikey OTP.'
 					));
 				}
 
@@ -157,6 +182,7 @@ function yubikeyGetIdentity($otp) {
 	if (!preg_match("/^((.*)[:])?" . "(([cbdefghijklnrtuvCBDEFGHIJKLNRTUV]{0,16})" . "([cbdefghijklnrtuvCBDEFGHIJKLNRTUV]{32}))$/", $otp, $matches)) {
 		return false;
 	}
+
 	if(!isset($matches[4]) || !$matches[4]) {
 		return false;
 	}

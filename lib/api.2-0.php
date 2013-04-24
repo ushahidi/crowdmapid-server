@@ -136,21 +136,25 @@ if($api_collection == 'user') {
 
 								if($User->emailAdd($request['email'], $primary, $confirmed)) {
 									Response::Send(200, RESP_OK, array('emails' => $User->Emails()));
+
 								} else {
 									Response::Send(400, RESP_ERR, array(
 										'error' => 'This address has already been claimed.'
 									));
+
 								}
 
 							} else {
 								Response::Send(400, RESP_ERR, array(
 									'error' => 'This address has already been claimed.'
 								));
+
 							}
 						} else {
 							Response::Send(400, RESP_ERR, array(
 								'error' => 'That does not appear to be a properly formatted address.'
 							));
+
 						}
 
 					}
@@ -239,34 +243,36 @@ if($api_collection == 'user') {
 					if(isset($request['password'])) {
 
 						$activity = array(
-							'override' => false, 'error' => null,
-							'user' => $User, 'raw' => $request['password'],
-							'hash' => $Security->Hash($request['password'], 128));
+							'error'    => null,
+							'user'     => $User,
+							'raw'      => $request['password'],
+							'hash'     => $Security->Hash($request['password'], 128)
+							);
 
 						Plugins::raiseEvent("method.private.password.get.pre", $activity);
 
-						if($activity['override']) {
-							if($activity['error']) {
-								Response::Send(500, RESP_ERR, array(
-									'error' => $activity['error']
-								));
-							} else {
-								Response::Send(200, RESP_OK, array('user_id' => $User->Hash(), 'session_id' => $User->Session($Application->ID())));
-							}
+						if($activity['error']) {
+							Response::Send(500, RESP_ERR, array(
+								'error' => $activity['error']
+							));
 						}
 
 						if($User->Password() == $activity['hash']) {
+							Plugins::raiseEvent("method.private.password.get.succeed", $activity);
 							Response::Send(200, RESP_OK, array('user_id' => $User->Hash(), 'session_id' => $User->Session($Application->ID())));
+
 						} else {
+							Plugins::raiseEvent("method.private.password.get.fail", $activity);
 							$error = 'Incorrect password.';
 
 							if (strlen($request['password']) && strtoupper($request['password']) == $request['password']) {
-								$error .= ' You appear to have your caps lock on.';
+								$error .= ' Was your caps lock turned on by accident?';
 							}
 
 							Response::Send(500, RESP_ERR, array(
 								'error' => $error
 							));
+
 						}
 
 					} else {
@@ -303,6 +309,7 @@ if($api_collection == 'user') {
 
 					$avatar = $User->Avatar();
 
+					Plugins::raiseEvent("method.public.avatar.get", $avatar);
 					Response::Send(200, RESP_OK, array(
 						'avatar' => $avatar
 					));
@@ -313,8 +320,54 @@ if($api_collection == 'user') {
 
 					api_expectations(array('avatar'));
 
-					$User->Avatar($request['avatar']);
-					Response::Send(200, RESP_OK, array());
+					Plugins::raiseEvent("method.public.avatar.post", $avatar);
+
+					$avatarCheck = curl_init();
+
+					curl_setopt_array($avatarCheck, array(
+						CURLOPT_URL            => $request['avatar'],
+						CURLOPT_HEADER         => TRUE,
+						CURLOPT_NOBODY         => TRUE,
+						CURLOPT_RETURNTRANSFER => TRUE,
+						CURLOPT_SSL_VERIFYPEER => FALSE,
+						CURLOPT_FOLLOWLOCATION => TRUE,
+						CURLOPT_MAXREDIRS      => 10,
+						CURLOPT_AUTOREFERER    => TRUE,
+						CURLOPT_CONNECTTIMEOUT => 5,
+						CURLOPT_TIMEOUT        => 5,
+						CURLOPT_USERAGENT      => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/537.31 (KHTML, like Gecko) Chrome/26.0.1410.65 Safari/537.31'
+					));
+
+					curl_exec($avatarCheck);
+					$http_status = curl_getinfo($avatarCheck, CURLINFO_HTTP_CODE);
+					$file_type = strtolower(trim(curl_getinfo($avatarCheck, CURLINFO_CONTENT_TYPE)));
+					$url = curl_getinfo($avatarCheck, CURLINFO_EFFECTIVE_URL);
+					curl_close($avatarCheck);
+
+					if($http_status == 200 && strlen($url)) {
+						if($file_type == 'image/gif' || $file_type == 'image/png' || $file_type == 'image/jpg' || $file_type == 'image/jpeg') {
+
+							$User->Avatar($url);
+
+							Response::Send(200, RESP_OK, array(
+								'avatar' => $url
+							));
+
+						} else {
+
+							Response::Send(500, RESP_ERR, array(
+								'error' => 'The specified avatar is not a supported file type.'
+							));
+
+						}
+
+					} else {
+
+						Response::Send(500, RESP_ERR, array(
+							'error' => 'There was a problem validating that URI.'
+						));
+
+					}
 
 				}
 
