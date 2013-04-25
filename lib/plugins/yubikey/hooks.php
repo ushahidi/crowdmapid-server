@@ -47,16 +47,13 @@ Plugins::registerEvent("method.private.password.get.pre", function(&$activity) {
 			return;
 		}
 
-		// Clean the OTP.
-		$activity['raw'] = strtolower($activity['raw']);
-
 		// Generate a once off.
 		$nonce = md5(uniqid(rand()));
 
 		$params = array(
 					'id'     => YUBIKEY_CLIENT_ID,
 					'nonce'  => $nonce,
-					'otp'    => $otp
+					'otp'    => strtolower($otp)
 				);
 		ksort($params);
 
