@@ -97,13 +97,39 @@ Plugins::registerEvent("method.security", function($struct) {
 				$g = new GoogleAuthenticator();
 
 				$secret = $g->generateSecret();
+				$qrcode = $g->getUrl('evansims', 'crowdmap.com', $secret);
 				$User->Storage($Application->ID(), 'googleauth_secret', $secret, true);
+
+				/* Annoying, Google Charts will sometimes incorrectly respond with a 400 Bad Request while an image is being rendered.
+				   Let's invoke an HTTP request to force the image rendering early, to try to avoid that. */
+				$http_status = null; $timeout = time() + 5000;
+				while($http_status != 200 && time() < $timeout) {
+					$gcharts = curl_init();
+
+					curl_setopt_array($gcharts, array(
+						CURLOPT_URL            => $qrcode,
+						CURLOPT_HEADER         => TRUE,
+						CURLOPT_NOBODY         => TRUE,
+						CURLOPT_RETURNTRANSFER => TRUE,
+						CURLOPT_SSL_VERIFYPEER => FALSE,
+						CURLOPT_FOLLOWLOCATION => TRUE,
+						CURLOPT_MAXREDIRS      => 10,
+						CURLOPT_AUTOREFERER    => TRUE,
+						CURLOPT_CONNECTTIMEOUT => 5,
+						CURLOPT_TIMEOUT        => 5,
+						CURLOPT_USERAGENT      => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/537.31 (KHTML, like Gecko) Chrome/26.0.1410.65 Safari/537.31'
+					));
+
+					curl_exec($gcharts);
+					$http_status = curl_getinfo($gcharts, CURLINFO_HTTP_CODE);
+					curl_close($gcharts);
+				}
 
 				Response::Send(200, RESP_OK, array(
 					'paired' => false,
 					'secret' => $secret,
 					'time'   => 30,
-					'qrcode' => $g->getUrl('evansims', 'crowdmap.com', $secret)
+					'qrcode' => $qrcode
 				));
 
 			}
