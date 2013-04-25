@@ -56,7 +56,7 @@ Plugins::registerEvent("method.private.password.get.pre", function(&$activity) {
 		$params = array(
 					'id'     => YUBIKEY_CLIENT_ID,
 					'nonce'  => $nonce,
-					'otp'    => $activity['raw']
+					'otp'    => $otp
 				);
 		ksort($params);
 
@@ -86,18 +86,18 @@ Plugins::registerEvent("method.private.password.get.pre", function(&$activity) {
 				$yubikey[$line[0]] = $line[1];
 			}
 
-			if ($yubikey['nonce'] != $nonce) {
+			if (!isset($yubikey['nonce']) || $yubikey['nonce'] != $nonce) {
 				$activity['error'] = 'The Yubico server responded in a suspicious manner. Try again later.';
 				return;
 
 			//} elseif ($yubikey['h'] != $nonce) { // TODO
 
 			} elseif ($yubikey['status'] == 'REPLAYED_OTP') {
-				$activity['error'] = 'That Yubikey OTP has already been used. Please generate another.';
+				$activity['error'] = 'That YubiKey code has already been used. Please generate another.';
 				return;
 
 			} elseif ($yubikey['status'] == 'BAD_OTP') {
-				$activity['error'] = 'That Yubikey OTP is not valid. Please try again.';
+				$activity['error'] = 'That YubiKey code is not valid. Please try again.';
 				return;
 
 			} elseif ($yubikey['status'] == 'OK') {
@@ -105,13 +105,13 @@ Plugins::registerEvent("method.private.password.get.pre", function(&$activity) {
 				return true;
 
 			} else {
-				$activity['error'] = 'We are experiencing difficulties verifying your Yubikey. Please try again shortly.';
+				$activity['error'] = 'We are experiencing difficulties verifying your YubiKey. Please try again shortly.';
 				return;
 
 			}
 
 		} else {
-			$activity['error'] = 'We are experiencing difficulties verifying your Yubikey. Please try again shortly.';
+			$activity['error'] = 'We are experiencing difficulties verifying your YubiKey. Please try again shortly.';
 			return;
 
 		}
@@ -125,17 +125,17 @@ Plugins::registerEvent("method.security", function($struct) {
 	global $User;
 	isSessionCleared($User->Hash(), true);
 
-	if ($struct[3] == 'yubikey') {
+	if (isset($struct[3]) && $struct[3] == 'yubikey') {
 		global $Application, $request;
 
 		if(HTTP_METHOD == 'GET') {
 			if($identity = $User->Storage($Application->ID(), 'yubikey_paired', null, true)) {
 				Response::Send(200, RESP_OK, array(
-					'paired' => $identity
+					'paired' => (int)$identity
 				));
 			} else {
 				Response::Send(404, RESP_ERR, array(
-					'error' => 'There are no Yubikeys paired with this account.'
+					'error' => 'There are no YubiKeys paired with this account.'
 				));
 			}
 		} elseif(HTTP_METHOD == 'POST' || HTTP_METHOD == 'PUT') {
@@ -149,13 +149,13 @@ Plugins::registerEvent("method.security", function($struct) {
 
 				if(!$identity) {
 					Response::Send(500, RESP_ERR, array(
-						'error' => 'That is not a recognizable Yubikey OTP.'
+						'error' => 'That is not a recognizable YubiKeys code.'
 					));
 				}
 
 				if($User->Storage($Application->ID(), 'yubikey_paired', $identity, true)) {
 					Response::Send(200, RESP_OK, array(
-						'paired' => $identity
+						'paired' => (int)$identity
 					));
 				}
 			}

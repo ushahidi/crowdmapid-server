@@ -83,7 +83,7 @@ Plugins::registerEvent("method.security", function($struct) {
 	global $User;
 	isSessionCleared($User->Hash(), true);
 
-	if ($struct[3] == 'googleauth') {
+	if (isset($struct[3]) && $struct[3] == 'googleauth') {
 		global $Application, $request;
 
 		if(HTTP_METHOD == 'GET') {
@@ -170,6 +170,7 @@ Plugins::registerEvent("method.security", function($struct) {
 
 			if($User->Storage($Application->ID(), 'googleauth_paired', '', true)) {
 				$User->Storage($Application->ID(), 'googleauth_secret', '', true);
+				$User->Storage($Application->ID(), 'googleauth_lastcode', '', true);
 				Response::Send(200, RESP_OK, array());
 
 			}
