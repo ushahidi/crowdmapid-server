@@ -369,6 +369,13 @@ if($api_collection == 'user') {
 
 					}
 
+				} elseif(HTTP_METHOD == 'DELETE') {
+
+					isSessionCleared($User->Hash(), true);
+					$User->Avatar('');
+
+					Response::Send(200, RESP_OK, array());
+
 				}
 
 			} elseif($api_action == 'phone') { // /user/:user_id/phone
