@@ -97,7 +97,7 @@ Plugins::registerEvent("method.security", function($struct) {
 				$g = new GoogleAuthenticator();
 
 				$secret = $g->generateSecret();
-				$qrcode = $g->getUrl('evansims', 'crowdmap.com', $secret);
+				$qrcode = $g->getUrl('login', 'crowdmap.com', $secret);
 				$User->Storage($Application->ID(), 'googleauth_secret', $secret, true);
 
 				/* Annoying, Google Charts will sometimes incorrectly respond with a 400 Bad Request while an image is being rendered.
